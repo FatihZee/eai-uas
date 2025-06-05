@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Orders | EAI Microservices</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Orders - Restaurant</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     :root {
@@ -242,92 +243,102 @@
     ::-webkit-scrollbar-thumb:hover {
       background: var(--primary-color);
     }
+
+    .payment-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      transition: all 0.3s ease;
+    }
+    .payment-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      color: white;
+    }
   </style>
 </head>
 <body>
   <div id="navbarContainer"></div>
 
-  <div class="page-header">
-    <div class="container">
-      <div class="d-flex justify-content-between align-items-center">
+  <div class="container mt-4">
+    <div class="main-container animate__animated animate__fadeIn">
+      <!-- Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h3 class="page-title">
-            <i class="fas fa-shopping-cart me-2"></i>Your Orders
-          </h3>
-          <p class="mb-0 text-white-50">Manage your food orders</p>
+          <h2 class="mb-1"><i class="fas fa-shopping-cart me-2"></i>My Orders</h2>
+          <p class="text-muted mb-0">Track and manage your food orders</p>
         </div>
-        <button class="btn btn-custom-primary text-white pulse-animation" data-bs-toggle="modal" data-bs-target="#orderModal">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#orderModal">
           <i class="fas fa-plus me-2"></i>New Order
-        </button>        
+        </button>
       </div>
+
+      <!-- Loading Spinner -->
+      <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <i class="fas fa-shopping-cart fa-4x mb-3"></i>
+        <h4>No Orders Yet</h4>
+        <p class="text-muted">You haven't placed any orders yet. Start by creating your first order!</p>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#orderModal">
+          <i class="fas fa-plus me-2"></i>Create First Order
+        </button>
+      </div>
+
+      <!-- Orders List -->
+      <div id="orderList" class="row" style="display: none;"></div>
     </div>
   </div>
 
-  <div class="container my-4">
-    <!-- Loading spinner -->
-    <div id="loadingSpinner">
-      <div class="spinner-border" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-    </div>
-
-    <div id="orderList" class="row g-4" style="display: none;"></div>
-    
-    <!-- Empty state will be shown if no orders -->
-    <div id="emptyState" class="empty-state" style="display: none;">
-      <i class="fas fa-shopping-basket"></i>
-      <h4>No Orders Found</h4>
-      <p class="text-muted">You don't have any orders yet. Place your first order now!</p>
-      <button class="btn btn-custom-primary mt-3" data-bs-toggle="modal" data-bs-target="#orderModal">
-        <i class="fas fa-plus me-2"></i>Create Order
-      </button>
-    </div>
-  </div>
-
-  <!-- Modal: Create/Edit Order -->
+  <!-- Order Modal -->
   <div class="modal fade" id="orderModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <form class="modal-content" id="orderForm">
+    <div class="modal-dialog">
+      <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="orderModalTitle">
             <i class="fas fa-utensils me-2"></i>Create Order
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body">
-          <input type="hidden" id="orderId">
-          <div class="mb-4">
-            <label class="form-label fw-bold">Select Menu</label>
-            <select id="menuSelect" class="form-select" required></select>
-          </div>
-          <div class="mb-4">
-            <label class="form-label fw-bold">Quantity</label>
-            <div class="input-group">
-              <button type="button" class="btn btn-outline-secondary" id="decreaseBtn">
-                <i class="fas fa-minus"></i>
-              </button>
-              <input type="number" id="quantity" class="form-control text-center" value="1" min="1" required>
-              <button type="button" class="btn btn-outline-secondary" id="increaseBtn">
-                <i class="fas fa-plus"></i>
-              </button>
+        <form id="orderForm">
+          <div class="modal-body">
+            <input type="hidden" id="orderId">
+            
+            <div class="mb-3">
+              <label for="menuSelect" class="form-label">Select Menu</label>
+              <select class="form-select" id="menuSelect" required>
+                <option value="">Choose a menu item...</option>
+              </select>
+            </div>
+            
+            <div class="mb-3">
+              <label for="quantity" class="form-label">Quantity</label>
+              <div class="input-group">
+                <button class="btn btn-outline-secondary" type="button" id="decreaseBtn">
+                  <i class="fas fa-minus"></i>
+                </button>
+                <input type="number" class="form-control text-center" id="quantity" value="1" min="1" required>
+                <button class="btn btn-outline-secondary" type="button" id="increaseBtn">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
             </div>
           </div>
-          <div class="alert alert-primary d-flex align-items-center" role="alert">
-            <i class="fas fa-info-circle me-2"></i>
-            <div>
-              Customize your order and we'll prepare it fresh for you!
-            </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+              <i class="fas fa-times me-1"></i>Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save me-1"></i>Save Order
+            </button>
           </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline-custom" type="button" data-bs-dismiss="modal">
-            <i class="fas fa-times me-1"></i>Cancel
-          </button>
-          <button class="btn btn-custom-primary" type="submit">
-            <i class="fas fa-save me-1"></i>Save Order
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -460,51 +471,48 @@
           if (!orders || orders.length === 0) {
             emptyState.style.display = "block";
           } else {
-            orderList.innerHTML = orders
-              .map((order, index) => {
-                const menuName = order.menu ? order.menu.name : `Menu ID: ${order.menu_id}`;
-                const delay = index * 100;
-
-                return `
-                <div class="col-md-4 fade-in" style="animation-delay: ${delay}ms">
-                  <div class="card h-100">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                      <span class="text-white">Order #${order.id}</span>
-                      <span class="order-tag">
-                        <i class="fas fa-clock me-1"></i> ${new Date(
-                          order.created_at
-                        ).toLocaleDateString()}
-                      </span>
+            orderList.innerHTML = orders.map(order => `
+              <div class="col-md-6 col-lg-4 mb-4 animate__animated animate__fadeInUp">
+                <div class="card order-card h-100">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                      <h5 class="card-title text-primary">
+                        <i class="fas fa-utensils me-2"></i>Order #${order.id}
+                      </h5>
+                      <span class="badge bg-primary">${order.quantity}x</span>
                     </div>
-                    <div class="card-body">
-                      <h5 class="mb-3">${menuName}</h5>
-                      <div class="d-flex justify-content-between mb-3">
-                        <span><i class="fas fa-cubes me-2"></i>Quantity</span>
-                        <span class="fw-bold">${order.quantity}</span>
+                    
+                    <div class="order-details mb-3">
+                      <p class="mb-2">
+                        <strong>${order.menu?.name || 'Unknown Menu'}</strong>
+                      </p>
+                      <p class="text-muted mb-2">
+                        <small>Price per item: Rp ${parseInt(order.menu?.price || 0).toLocaleString()}</small>
+                      </p>
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Total:</span>
+                        <span class="fw-bold text-success">Rp ${parseInt(order.total_price).toLocaleString()}</span>
                       </div>
-                      <div class="d-flex justify-content-between mb-4">
-                        <span><i class="fas fa-tag me-2"></i>Total</span>
-                        <span class="order-price">Rp ${parseInt(
-                          order.total_price
-                        ).toLocaleString()}</span>
-                      </div>
-                      <div class="d-flex justify-content-end gap-2">
-                        <button class="btn btn-warning btn-action edit-btn" onclick="editOrder('${order.id}', '${order.menu_id}', ${order.quantity})" title="Edit Order">
-                          <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-danger btn-action" onclick="deleteOrder('${order.id}')" title="Delete Order">
-                          <i class="fas fa-trash-alt"></i>
-                        </button>
-                        <a href="order-detail.html?id=${order.id}" class="btn btn-info btn-action" title="View Details">
-                          <i class="fas fa-info-circle"></i>
-                        </a>
-                      </div>
+                      <p class="text-muted mb-0">
+                        <small><i class="fas fa-calendar me-1"></i>${new Date(order.created_at).toLocaleDateString()}</small>
+                      </p>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                      <button class="btn btn-primary btn-sm flex-fill edit-btn" onclick="editOrder(${order.id}, ${order.menu_id}, ${order.quantity})">
+                        <i class="fas fa-edit me-1"></i>Edit
+                      </button>
+                      <button class="btn btn-danger btn-sm flex-fill" onclick="deleteOrder(${order.id})">
+                        <i class="fas fa-trash me-1"></i>Delete
+                      </button>
+                      <button class="btn btn-success btn-sm flex-fill" onclick="createPaymentForOrder(${order.id})">
+                        <i class="fas fa-credit-card me-1"></i>Pay
+                      </button>
                     </div>
                   </div>
                 </div>
-              `;
-              })
-              .join("");
+              </div>
+            `).join("");
             orderList.style.display = "flex";
           }
         } catch (error) {
@@ -679,6 +687,64 @@
             icon: 'error',
             confirmButtonColor: '#6366f1'
           });
+        }
+      };
+
+      // Fungsi untuk membuat pembayaran untuk order tertentu
+      window.createPaymentForOrder = async (orderId) => {
+        const result = await Swal.fire({
+          title: 'Create Payment',
+          text: `Create payment for Order #${orderId}?`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#10b981',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: 'Yes, create payment',
+          cancelButtonText: 'Cancel'
+        });
+
+        if (result.isConfirmed) {
+          try {
+            Swal.fire({
+              title: 'Creating Payment...',
+              text: 'Please wait while we process your request',
+              allowOutsideClick: false,
+              didOpen: () => { Swal.showLoading(); }
+            });
+
+            const paymentData = await fetchGraphQL(`
+              mutation CreatePayment($input: CreatePaymentInput!) {
+                createPayment(input: $input) {
+                  message
+                  redirect_url
+                  payment {
+                    id
+                    status
+                  }
+                }
+              }
+            `, { input: { orderId: orderId.toString() } });
+
+            if (paymentData?.createPayment) {
+              Swal.fire({
+                title: 'Payment Created!',
+                text: paymentData.createPayment.message,
+                icon: 'success',
+                confirmButtonColor: '#6366f1'
+              }).then(() => {
+                if (paymentData.createPayment.redirect_url) {
+                  window.open(paymentData.createPayment.redirect_url, '_blank');
+                }
+              });
+            }
+          } catch (error) {
+            Swal.fire({
+              title: 'Error',
+              text: `Failed to create payment: ${error.message}`,
+              icon: 'error',
+              confirmButtonColor: '#6366f1'
+            });
+          }
         }
       };
 

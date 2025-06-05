@@ -60,39 +60,22 @@
     }
     
     .review-card {
-      border-radius: 12px;
-      border: none;
-      box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-      margin-bottom: 20px;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      margin-bottom: 15px;
       transition: transform 0.2s;
     }
     
     .review-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
     
-    .review-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    
-    .review-avatar {
-      width: 40px;
-      height: 40px;
-      background-color: #e9ecef;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 12px;
-      font-weight: 600;
-      color: #495057;
+    .rating-stars {
+      color: #ffc107;
     }
     
     .filter-dropdown {
-      background-color: white;
       border-radius: 20px;
       padding: 8px 15px;
       border: 1px solid #ced4da;
@@ -145,7 +128,12 @@
 
   <div class="container my-5">
     <div id="menuDetail" class="shadow rounded-3">
-      <!-- Menu detail -->
+      <!-- Menu detail akan dimuat di sini -->
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading menu details...</span>
+        </div>
+      </div>
     </div>
 
     <div class="my-5">
@@ -158,6 +146,7 @@
           <option value="negative">Negative 😡</option>
         </select>
       </div>
+
       <div id="reviewList" class="row"></div>
     </div>
   </div>
@@ -170,6 +159,30 @@
 
       const menuDetail = document.getElementById("menuDetail");
       const menuId = new URLSearchParams(window.location.search).get("id");
+
+      // GraphQL helper function
+      async function fetchGraphQL(url, query, variables = {}) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ query, variables })
+          });
+          
+          const result = await response.json();
+          if (result.errors) {
+            console.error('GraphQL errors:', result.errors);
+            throw new Error(result.errors.map(e => e.message).join(', '));
+          }
+          return result.data;
+        } catch (error) {
+          console.error('GraphQL request failed:', error);
+          throw error;
+        }
+      }
 
       if (menuId) {
         loadMenuDetail(menuId);
@@ -192,31 +205,101 @@
 
     async function loadMenuDetail(id) {
       try {
-        const [menuRes, orderCountRes, ratingStatsRes, sentimentStatsRes] = await Promise.all([
-          fetch(`http://localhost:3002/menus/${id}`),
-          fetch(`http://localhost:3003/orders/menu/${id}`),
-          fetch(`http://localhost:3004/reviews/stats/menu/${id}`),
-          fetch(`http://localhost:3004/reviews/menus/${id}/sentiment-stats`)
-        ]);
+        // Load menu details via GraphQL
+        const menuData = await fetchGraphQL('http://localhost:4002/graphql', `
+          query GetMenu($id: ID!) {
+            menu(id: $id) {
+              id
+              name
+              description
+              price
+              orderCount
+              created_at
+              createdBy {
+                id
+                name
+                email
+              }
+            }
+          }
+        `, { id });
 
-        if (!menuRes.ok || !orderCountRes.ok || !ratingStatsRes.ok || !sentimentStatsRes.ok)
-          throw new Error("Failed to load data");
+        if (!menuData?.menu) {
+          throw new Error('Menu not found');
+        }
 
-        const menu = await menuRes.json();
-        const orderCount = await orderCountRes.json();
-        const ratingStats = await ratingStatsRes.json();
-        const sentimentStats = await sentimentStatsRes.json();
-        const sentiments = sentimentStats.sentimentStats || {};
+        const menu = menuData.menu;
 
-        const avg = parseFloat(ratingStats.averageRating).toFixed(1);
-        const totalReviews = ratingStats.reviewCount;
+        // Load order count via GraphQL (gunakan orderCountByMenu yang benar)
+        let orderCount = menu.orderCount || 0;
+        try {
+          const orderData = await fetchGraphQL('http://localhost:4003/graphql', `
+            query GetOrderCountByMenu($menuId: ID!) {
+              orderCountByMenu(menuId: $menuId) {
+                count
+              }
+            }
+          `, { menuId: id });
 
-        menuDetail.innerHTML = `
+          orderCount = orderData?.orderCountByMenu?.count || 0;
+        } catch (orderError) {
+          console.log('Could not fetch order count:', orderError.message);
+          // Gunakan orderCount dari menu service jika ada
+        }
+
+        // Load rating stats via GraphQL
+        let ratingStats = { averageRating: 0, reviewCount: 0 };
+        try {
+          const reviewStatsData = await fetchGraphQL('http://localhost:4004/graphql', `
+            query GetReviewStats($menuId: ID!) {
+              reviewStatsByMenu(menuId: $menuId) {
+                averageRating
+                reviewCount
+              }
+            }
+          `, { menuId: id });
+
+          ratingStats = reviewStatsData?.reviewStatsByMenu || ratingStats;
+        } catch (reviewError) {
+          console.log('Could not fetch review stats:', reviewError.message);
+        }
+
+        // Load sentiment stats via GraphQL
+        let sentimentStats = { positive: 0, neutral: 0, negative: 0, total: 0 };
+        try {
+          const sentimentData = await fetchGraphQL('http://localhost:4004/graphql', `
+            query GetSentimentStats($menuId: ID!) {
+              sentimentStatsByMenu(menuId: $menuId) {
+                positive
+                neutral
+                negative
+                total
+              }
+            }
+          `, { menuId: id });
+
+          sentimentStats = sentimentData?.sentimentStatsByMenu || sentimentStats;
+        } catch (sentimentError) {
+          console.log('Could not fetch sentiment stats:', sentimentError.message);
+        }
+        
+        // Calculate percentages
+        const total = sentimentStats.total || 1; // Prevent division by zero
+        const sentiments = {
+          positivePercentage: Math.round((sentimentStats.positive / total) * 100),
+          neutralPercentage: Math.round((sentimentStats.neutral / total) * 100),
+          negativePercentage: Math.round((sentimentStats.negative / total) * 100)
+        };
+
+        const avg = parseFloat(ratingStats.averageRating || 0).toFixed(1);
+        const totalReviews = ratingStats.reviewCount || 0;
+
+        document.getElementById('menuDetail').innerHTML = `
           <div class="menu-header">
             <h2 class="mb-2">${menu.name}</h2>
             <div class="d-flex align-items-center">
               <div class="me-3">
-                ${renderStars(avg)}
+                ${renderStars(parseFloat(avg))}
                 <span class="ms-2 fw-bold">${avg}</span>
               </div>
               <span class="badge bg-light text-dark">
@@ -237,21 +320,21 @@
                 <div class="d-flex align-items-center mb-3">
                   <div class="me-4">
                     <i class="fas fa-shopping-cart me-2 text-muted"></i>
-                    <span><strong>${orderCount.count}</strong> orders</span>
+                    <span><strong>${orderCount}</strong> orders</span>
                   </div>
                   
                   <div>
                     <i class="fas fa-calendar-alt me-2 text-muted"></i>
                     <span>Added on ${new Date(menu.created_at).toLocaleDateString()}</span>
                   </div>
-                  
                 </div>
+                
                 <div>
-                    <p class="text-muted mt-2">
-                      <i class="fas fa-user me-1 text-muted"></i>
-                      Dibuat oleh: <strong>${menu.createdBy?.name || 'Unknown'}</strong>
-                    </p>
-                  </div>
+                  <p class="text-muted mt-2">
+                    <i class="fas fa-user me-1 text-muted"></i>
+                    Created by: <strong>${menu.createdBy?.name || 'Unknown'}</strong>
+                  </p>
+                </div>
               </div>
               
               <div class="col-lg-4">
@@ -293,10 +376,10 @@
           </div>
         `;
       } catch (err) {
-        menuDetail.innerHTML = `
+        document.getElementById('menuDetail').innerHTML = `
           <div class="menu-content py-4">
             <div class="alert alert-danger">
-              <i class="fas fa-exclamation-circle me-2"></i>Failed to load menu detail.
+              <i class="fas fa-exclamation-circle me-2"></i>Failed to load menu detail: ${err.message}
             </div>
           </div>
         `;
@@ -307,102 +390,180 @@
     async function loadFilteredReviews(menuId = new URLSearchParams(window.location.search).get("id")) {
       try {
         const sentiment = document.getElementById("sentimentFilter").value;
-        const url = sentiment
-          ? `http://localhost:3004/reviews/menus/${menuId}/reviews/sentiment/${sentiment}`
-          : `http://localhost:3004/reviews/menu/${menuId}`;
+        
+        // Build GraphQL query based on filter
+        let query;
+        let variables = { menuId };
 
-        const res = await fetch(url);
-        const data = await res.json();
-        const reviews = data.reviews || [];
+        if (sentiment) {
+          // Check if reviewsByMenuAndSentiment exists, if not use alternative approach
+          query = `
+            query GetReviewsBySentiment($menuId: ID!, $sentiment: String!) {
+              reviewsByMenuAndSentiment(menuId: $menuId, sentiment: $sentiment) {
+                id
+                rating
+                comment
+                sentiment
+                created_at
+                user {
+                  id
+                  name
+                }
+              }
+            }
+          `;
+          variables.sentiment = sentiment;
+        } else {
+          query = `
+            query GetReviewsByMenu($menuId: ID!) {
+              reviewsByMenu(menuId: $menuId) {
+                id
+                rating
+                comment
+                sentiment
+                created_at
+                user {
+                  id
+                  name
+                }
+              }
+            }
+          `;
+        }
+
+        const reviewsData = await fetchGraphQL('http://localhost:4004/graphql', query, variables);
+        
+        let reviews = [];
+        if (sentiment) {
+          reviews = reviewsData?.reviewsByMenuAndSentiment || [];
+          // If sentiment-specific query failed, fall back to all reviews and filter client-side
+          if (reviews.length === 0) {
+            const allReviewsData = await fetchGraphQL('http://localhost:4004/graphql', `
+              query GetReviewsByMenu($menuId: ID!) {
+                reviewsByMenu(menuId: $menuId) {
+                  id
+                  rating
+                  comment
+                  sentiment
+                  created_at
+                  user {
+                    id
+                    name
+                  }
+                }
+              }
+            `, { menuId });
+            
+            const allReviews = allReviewsData?.reviewsByMenu || [];
+            reviews = allReviews.filter(review => 
+              review.sentiment?.toLowerCase() === sentiment.toLowerCase()
+            );
+          }
+        } else {
+          reviews = reviewsData?.reviewsByMenu || [];
+        }
 
         const reviewList = document.getElementById("reviewList");
 
         if (!reviews.length) {
           reviewList.innerHTML = `
             <div class="col-12">
-              <div class="text-center p-4">
-                <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
-                <p class="text-muted">No reviews available for this menu item.</p>
+              <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle me-2"></i>
+                No reviews found ${sentiment ? `for ${sentiment} sentiment` : ''}.
               </div>
             </div>
           `;
           return;
         }
 
-        reviewList.innerHTML = reviews.map(r => {
-          const sentimentClass = getSentimentClass(r.sentiment);
-          const sentimentBadge = getSentimentBadge(r.sentiment);
-          const initials = getInitials(r.user?.name || "Anonymous");
-          
-          return `
-            <div class="col-md-6 mb-3">
-              <div class="review-card">
-                <div class="card-body">
-                  <div class="review-header">
-                    <div class="review-avatar">
-                      ${initials}
+        reviewList.innerHTML = reviews.map(review => `
+          <div class="col-md-6 mb-3">
+            <div class="review-card">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div class="d-flex align-items-center">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px; font-size: 0.8rem;">
+                      ${getInitials(review.user?.name || 'Unknown')}
                     </div>
                     <div>
-                      <h6 class="card-title mb-0">${r.user?.name || "Anonymous"}</h6>
-                      <div class="d-flex align-items-center mt-1">
-                        <div class="me-2">${renderStars(r.rating)}</div>
-                        ${sentimentBadge}
-                      </div>
+                      <h6 class="mb-0">${review.user?.name || 'Anonymous'}</h6>
+                      <small class="text-muted">${formatDate(review.created_at)}</small>
                     </div>
                   </div>
-                  <div class="review-content">
-                    <p class="mb-2">${r.comment}</p>
-                    <p class="text-muted small mb-0">
-                      <i class="far fa-clock me-1"></i>${formatDate(r.created_at)}
-                    </p>
-                  </div>
+                  ${getSentimentBadge(review.sentiment)}
                 </div>
+                
+                <div class="mb-2">
+                  ${renderStars(review.rating)}
+                  <span class="ms-1 text-muted">(${review.rating}/5)</span>
+                </div>
+                
+                <p class="text-muted mb-0">${review.comment || 'No comment provided.'}</p>
               </div>
             </div>
-          `;
-        }).join('');
+          </div>
+        `).join('');
+
       } catch (error) {
         console.error("Error loading reviews:", error);
-        reviewList.innerHTML = `
+        document.getElementById("reviewList").innerHTML = `
           <div class="col-12">
             <div class="alert alert-danger">
-              <i class="fas fa-exclamation-circle me-2"></i>Failed to load reviews. Please try again later.
+              <i class="fas fa-exclamation-triangle me-2"></i>Failed to load reviews: ${error.message}
             </div>
           </div>
         `;
       }
     }
 
-    function renderStars(rating) {
-      const full = Math.floor(rating);
-      const half = rating % 1 >= 0.5;
-      const stars = Array(full).fill('<i class="fas fa-star text-warning"></i>')
-        .concat(half ? ['<i class="fas fa-star-half-alt text-warning"></i>'] : [])
-        .concat(Array(5 - full - (half ? 1 : 0)).fill('<i class="far fa-star text-warning"></i>'));
-      return stars.join('');
-    }
-
-    function getSentimentClass(sentiment) {
-      if (!sentiment) return 'sentiment-neutral';
-      
-      switch (sentiment.toLowerCase()) {
-        case 'positive': return 'sentiment-positive';
-        case 'neutral': return 'sentiment-neutral';
-        case 'negative': return 'sentiment-negative';
-        default: return 'sentiment-neutral';
+    // Helper functions
+    async function fetchGraphQL(url, query, variables = {}) {
+      const token = localStorage.getItem("token");
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ query, variables })
+        });
+        
+        const result = await response.json();
+        if (result.errors) {
+          console.error('GraphQL errors:', result.errors);
+          throw new Error(result.errors.map(e => e.message).join(', '));
+        }
+        return result.data;
+      } catch (error) {
+        console.error('GraphQL request failed:', error);
+        throw error;
       }
     }
 
-    function getSentimentBadge(sentiment) {
-      if (!sentiment) return '<span class="badge-sentiment badge-neutral">Unknown</span>';
+    function renderStars(rating) {
+      const fullStars = Math.floor(rating);
+      const hasHalfStar = rating % 1 !== 0;
+      const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
       
-      switch (sentiment.toLowerCase()) {
+      return `
+        <span class="rating-stars">
+          ${'<i class="fas fa-star"></i>'.repeat(fullStars)}
+          ${hasHalfStar ? '<i class="fas fa-star-half-alt"></i>' : ''}
+          ${'<i class="far fa-star"></i>'.repeat(emptyStars)}
+        </span>
+      `;
+    }
+    
+    function getSentimentBadge(sentiment) {
+      switch (sentiment?.toLowerCase()) {
         case 'positive':
           return '<span class="badge-sentiment badge-positive">Positive</span>';
-        case 'neutral':
-          return '<span class="badge-sentiment badge-neutral">Neutral</span>';
         case 'negative':
           return '<span class="badge-sentiment badge-negative">Negative</span>';
+        case 'neutral':
+          return '<span class="badge-sentiment badge-neutral">Neutral</span>';
         default:
           return '<span class="badge-sentiment badge-neutral">Unknown</span>';
       }
@@ -429,21 +590,16 @@
   
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Memuat navbar dari file navbar.html
       fetch('navbar.html')
         .then(response => response.text())
         .then(data => {
           document.getElementById('navbarContainer').innerHTML = data;
-          
-          // Memastikan script navbar dijalankan
           const scripts = document.getElementById('navbarContainer').querySelectorAll('script');
           scripts.forEach(script => {
             const newScript = document.createElement('script');
             newScript.textContent = script.textContent;
             document.body.appendChild(newScript);
           });
-          
-          // Jalankan inisialisasi navbar
           if (typeof initNavbar === 'function') {
             initNavbar();
           }

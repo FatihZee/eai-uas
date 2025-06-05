@@ -8,13 +8,12 @@ const typeDefs = gql`
     order_id: Int!
     rating: Int!
     comment: String
-    sentiment: String # positive, negative, neutral
+    sentiment: String # positive, negative, neutral - dari Gemini AI
     created_at: String
     updated_at: String
     user: User # Detail user dari User Service
     menu: Menu # Detail menu dari Menu Service
-    order: Order # Detail order dari Order Service (opsional, tergantung kebutuhan)
-    aiRecommendation: AIRecommendation # Rekomendasi AI untuk review ini
+    order: Order # Detail order dari Order Service (opsional)
   }
 
   type User {
@@ -38,13 +37,6 @@ const typeDefs = gql`
     quantity: Int
     total_price: Float
   }
-  
-  type AIRecommendation {
-    id: ID!
-    review_id: Int!
-    recommendation: String!
-    created_at: String
-  }
 
   type ReviewActionResponse {
     message: String!
@@ -62,23 +54,11 @@ const typeDefs = gql`
     reviewCount: Int!
   }
 
-  type SentimentStatDetail {
-    positive: Int!
-    negative: Int!
-    neutral: Int!
-    nullSentiment: Int! # Untuk review tanpa sentimen atau sentimen tidak terdefinisi
-    total: Int!
-    positivePercentage: Float!
-    negativePercentage: Float!
-    neutralPercentage: Float!
-  }
-  
   type SentimentStats {
     menuId: ID!
     positive: Int!
     negative: Int!
     neutral: Int!
-    nullSentiment: Int!
     total: Int!
     positivePercentage: Float!
     negativePercentage: Float!
@@ -105,14 +85,12 @@ const typeDefs = gql`
     reviewStatsByMenu(menuId: ID!): ReviewStats
     reviewsByMenuAndSentiment(menuId: ID!, sentiment: String!): [Review!]
     sentimentStatsByMenu(menuId: ID!): SentimentStats
-    aiRecommendationForReview(reviewId: ID!): AIRecommendation # Mengambil rekomendasi yang sudah ada
   }
 
   type Mutation {
     createReview(input: CreateReviewInput!): ReviewActionResponse!
     updateReview(id: ID!, input: UpdateReviewInput!): ReviewActionResponse!
     deleteReview(id: ID!): DeleteReviewResponse!
-    generateAIRecommendation(reviewId: ID!): AIRecommendation # Membuat dan menyimpan rekomendasi baru
   }
 `;
 

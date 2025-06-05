@@ -1,7 +1,6 @@
 const Review = require('../models/reviewModel');
 const { analyzeSentiment } = require('../helpers/sentimentAnalyzer');
 const axios = require('axios');
-const db = require('../config/db'); // Untuk saveAIRecommendationToDb
 require('dotenv').config();
 
 // URL layanan lain (GraphQL endpoints)
@@ -13,46 +12,111 @@ class ReviewService {
 
   static async _fetchUserDetails(userId, token) {
     if (!userId) return null;
+    
     try {
       const response = await axios.post(USER_SERVICE_GRAPHQL_URL, {
-        query: `query GetUser($id: ID!) { user(id: $id) { id name email phone } }`,
+        query: `
+          query GetUser($id: ID!) {
+            user(id: $id) {
+              id
+              name
+              email
+              phone
+              created_at
+            }
+          }
+        `,
         variables: { id: userId.toString() }
-      }, { headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': token }) } });
-      if (response.data.errors) throw new Error(response.data.errors.map(e => e.message).join(', '));
-      return response.data.data.user;
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': token })
+        }
+      });
+
+      if (response.data.errors) {
+        console.error('GraphQL errors:', response.data.errors);
+        return { id: userId, name: 'Unknown User (Fetch Error)', email: 'unknown@example.com' };
+      }
+
+      return response.data.data.user || { id: userId, name: 'Unknown User', email: 'unknown@example.com' };
     } catch (error) {
-      console.error(`Error fetching user ${userId} from UserService:`, error.message);
-      return { id: userId, name: 'Unknown User (Fetch Error)' };
+      console.error(`Error fetching user ${userId}:`, error.message);
+      return { id: userId, name: 'Unknown User (Fetch Error)', email: 'unknown@example.com' };
     }
   }
 
   static async _fetchMenuDetails(menuId, token) {
     if (!menuId) return null;
+    
     try {
       const response = await axios.post(MENU_SERVICE_GRAPHQL_URL, {
-        query: `query GetMenu($id: ID!) { menu(id: $id) { id name description price } }`,
+        query: `
+          query GetMenu($id: ID!) {
+            menu(id: $id) {
+              id
+              name
+              description
+              price
+              user_id
+              created_at
+            }
+          }
+        `,
         variables: { id: menuId.toString() }
-      }, { headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': token }) } });
-      if (response.data.errors) throw new Error(response.data.errors.map(e => e.message).join(', '));
-      return response.data.data.menu;
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': token })
+        }
+      });
+
+      if (response.data.errors) {
+        console.error('GraphQL errors:', response.data.errors);
+        return { id: menuId, name: 'Unknown Menu (Fetch Error)', price: 0 };
+      }
+
+      return response.data.data.menu || { id: menuId, name: 'Unknown Menu', price: 0 };
     } catch (error) {
-      console.error(`Error fetching menu ${menuId} from MenuService:`, error.message);
-      return { id: menuId, name: 'Unknown Menu (Fetch Error)' };
+      console.error(`Error fetching menu ${menuId}:`, error.message);
+      return { id: menuId, name: 'Unknown Menu (Fetch Error)', price: 0 };
     }
   }
 
   static async _fetchOrderDetails(orderId, token) {
     if (!orderId) return null;
+    
     try {
       const response = await axios.post(ORDER_SERVICE_GRAPHQL_URL, {
-        query: `query GetOrder($id: ID!) { order(id: $id) { id user_id menu_id quantity total_price } }`,
+        query: `
+          query GetOrder($id: ID!) {
+            order(id: $id) {
+              id
+              user_id
+              menu_id
+              quantity
+              total_price
+              created_at
+            }
+          }
+        `,
         variables: { id: orderId.toString() }
-      }, { headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': token }) } });
-      if (response.data.errors) throw new Error(response.data.errors.map(e => e.message).join(', '));
-      return response.data.data.order;
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': token })
+        }
+      });
+
+      if (response.data.errors) {
+        console.error('GraphQL errors:', response.data.errors);
+        return { id: orderId, user_id: null, menu_id: null, quantity: 0, total_price: 0 };
+      }
+
+      return response.data.data.order || { id: orderId, user_id: null, menu_id: null, quantity: 0, total_price: 0 };
     } catch (error) {
-      console.error(`Error fetching order ${orderId} from OrderService:`, error.message);
-      return { id: orderId, details: 'Unknown Order (Fetch Error)' };
+      console.error(`Error fetching order ${orderId}:`, error.message);
+      return { id: orderId, user_id: null, menu_id: null, quantity: 0, total_price: 0 };
     }
   }
 
@@ -61,9 +125,9 @@ class ReviewService {
     const [user, menu, order] = await Promise.all([
       this._fetchUserDetails(review.user_id, token),
       this._fetchMenuDetails(review.menu_id, token),
-      this._fetchOrderDetails(review.order_id, token) // Order mungkin tidak selalu dibutuhkan, tergantung konteks
+      this._fetchOrderDetails(review.order_id, token)
     ]);
-    return { ...review, user, menu, order }; // order bisa null jika tidak relevan
+    return { ...review, user, menu, order };
   }
 
   static async _enrichMultipleReviews(reviews, token) {
@@ -95,7 +159,6 @@ class ReviewService {
         if (err) return reject(new Error(`Failed to retrieve reviews for user ${userId}.`));
         const enrichedReviews = await Promise.all(reviews.map(async review => {
             const menu = await this._fetchMenuDetails(review.menu_id, token);
-            // User detail tidak perlu di-fetch lagi karena kita sudah dalam konteks user
             return { ...review, menu };
         }));
         resolve(enrichedReviews);
@@ -109,7 +172,6 @@ class ReviewService {
         if (err) return reject(new Error(`Failed to retrieve reviews for menu ${menuId}.`));
         const enrichedReviews = await Promise.all(reviews.map(async review => {
             const user = await this._fetchUserDetails(review.user_id, token);
-            // Menu detail tidak perlu di-fetch lagi
             return { ...review, user };
         }));
         resolve(enrichedReviews);
@@ -121,7 +183,7 @@ class ReviewService {
     return new Promise((resolve, reject) => {
       Review.getByOrderId(orderId, async (err, reviews) => {
         if (err) return reject(new Error(`Failed to retrieve reviews for order ${orderId}.`));
-        resolve(await this._enrichMultipleReviews(reviews, token)); // Enrich dengan user dan menu
+        resolve(await this._enrichMultipleReviews(reviews, token));
       });
     });
   }
@@ -143,38 +205,35 @@ class ReviewService {
         throw new Error('Menu ID is missing from the order details.');
     }
 
-    // analyzeSentiment will log its own errors to the console and return "Neutral" on failure.
+    // Analyze sentiment menggunakan Gemini AI
     const sentiment = comment ? await analyzeSentiment(comment) : 'neutral';
     
     const newReviewData = {
       user_id: requestingUserId,
       menu_id: order.menu_id,
       order_id: parseInt(orderId),
-      rating,
+      rating: parseInt(rating),
       comment: comment || '',
-      sentiment,
-      created_at: new Date()
+      sentiment: sentiment,
+      created_at: new Date(),
+      updated_at: new Date()
     };
 
     return new Promise((resolve, reject) => {
-      Review.create(newReviewData, async (dbErr, dbResult) => {
-        if (dbErr) {
-          // Error during database insertion
-          return reject(new Error(`Failed to save review to database: ${dbErr.message}`));
+      Review.create(newReviewData, async (err, dbResult) => {
+        if (err) {
+          console.error('Database error creating review:', err);
+          return reject(new Error(`Failed to save review to database: ${err.message}`));
         }
+
+        const reviewId = dbResult.insertId;
+        const createdReview = { id: reviewId, ...newReviewData };
+
         try {
-          const createdReview = { id: dbResult.insertId, ...newReviewData };
-          
-          // Enrich with user and menu for the response
-          // These calls might throw if dependent services are down or return errors
-          const user = await this._fetchUserDetails(createdReview.user_id, token);
-          const menu = await this._fetchMenuDetails(createdReview.menu_id, token);
-          
-          resolve({ ...createdReview, user, menu });
+          const enrichedReview = await this._enrichReview(createdReview, token);
+          resolve(enrichedReview);
         } catch (fetchErr) {
-          // Error fetching user/menu details AFTER review was created in DB
           console.error(`Error fetching user/menu details for review ${dbResult.insertId}:`, fetchErr.message);
-          // Reject the whole operation with a clear message
           reject(new Error(`Review was created (ID: ${dbResult.insertId}), but failed to fetch associated user/menu details: ${fetchErr.message}`));
         }
       });
@@ -183,7 +242,7 @@ class ReviewService {
 
   static async updateReview(id, reviewData, requestingUserId, token) {
     const { rating, comment } = reviewData;
-    const existingReview = await this.getReviewById(id, token); // getReviewById sudah mengembalikan review atau null
+    const existingReview = await this.getReviewById(id, token);
     if (!existingReview) {
       throw new Error(`Review with ID ${id} not found.`);
     }
@@ -195,6 +254,7 @@ class ReviewService {
     if (rating !== undefined) updatePayload.rating = rating;
     if (comment !== undefined) {
       updatePayload.comment = comment;
+      // Re-analyze sentiment with Gemini AI
       updatePayload.sentiment = await analyzeSentiment(comment);
     }
 
@@ -202,7 +262,7 @@ class ReviewService {
       Review.update(id, updatePayload, async (err, result) => {
         if (err) return reject(new Error(`Failed to update review ${id}.`));
         if (result.affectedRows === 0) return reject(new Error(`Review ${id} not found for update.`));
-        resolve(await this.getReviewById(id, token)); // Return updated and enriched review
+        resolve(await this.getReviewById(id, token));
       });
     });
   }
@@ -215,11 +275,12 @@ class ReviewService {
     if (existingReview.user_id !== requestingUserId) {
       throw new Error('You can only delete your own reviews.');
     }
+
     return new Promise((resolve, reject) => {
       Review.delete(id, (err, result) => {
         if (err) return reject(new Error(`Failed to delete review ${id}.`));
         if (result.affectedRows === 0) return reject(new Error(`Review ${id} not found for deletion.`));
-        resolve({ message: 'Review deleted successfully', id: id });
+        resolve({ message: 'Review deleted successfully', id });
       });
     });
   }
@@ -236,7 +297,7 @@ class ReviewService {
         Review.countByMenuId(menuId, (errCount, countResult) => {
           if (errCount) return reject(new Error(`Failed to count reviews for menu ${menuId}.`));
           resolve({
-            menu, // Menggunakan objek menu yang sudah di-fetch
+            menu,
             averageRating: avgResult[0]?.averageRating || 0,
             reviewCount: countResult[0]?.count || 0,
           });
@@ -251,7 +312,7 @@ class ReviewService {
             if (err) return reject(new Error(`Failed to get reviews for menu ${menuId} with sentiment ${sentiment}.`));
             const enrichedReviews = await Promise.all(reviews.map(async review => {
                 const user = await this._fetchUserDetails(review.user_id, token);
-                return { ...review, user }; // Menu tidak perlu di-fetch lagi, sudah dalam konteks menuId
+                return { ...review, user };
             }));
             resolve(enrichedReviews);
         });
@@ -262,12 +323,10 @@ class ReviewService {
      return new Promise((resolve, reject) => {
         Review.getSentimentCountByMenuId(menuId, (err, sentimentCounts) => {
             if (err) return reject(new Error(`Failed to get sentiment stats for menu ${menuId}.`));
-            const stats = { positive: 0, negative: 0, neutral: 0, total: 0, nullSentiment: 0 };
+            const stats = { positive: 0, negative: 0, neutral: 0, total: 0 };
             sentimentCounts.forEach(item => {
                 if (stats.hasOwnProperty(item.sentiment)) {
                     stats[item.sentiment] = item.count;
-                } else if (item.sentiment === null || item.sentiment === '') {
-                    stats.nullSentiment += item.count;
                 }
                 stats.total += item.count;
             });
@@ -283,70 +342,6 @@ class ReviewService {
             resolve({ menuId: menuId, ...stats });
         });
     });
-  }
-  
-  // --- AI Recommendation Logic ---
-  static async saveAIRecommendation(reviewId, recommendationText) {
-    return new Promise((resolve, reject) => {
-      const recommendationData = {
-        review_id: reviewId,
-        recommendation: recommendationText,
-        created_at: new Date()
-      };
-      db.query('INSERT INTO ai_recommendations SET ?', recommendationData, (err, result) => {
-        if (err) {
-          console.error('Error saving AI recommendation to DB:', err);
-          return reject(new Error('Failed to save AI recommendation.'));
-        }
-        resolve({ id: result.insertId, ...recommendationData });
-      });
-    });
-  }
-
-  static async getAIRecommendationForReview(reviewId) {
-    return new Promise((resolve, reject) => {
-      db.query('SELECT * FROM ai_recommendations WHERE review_id = ? ORDER BY created_at DESC LIMIT 1', [reviewId], (err, results) => {
-        if (err) return reject(new Error('Failed to fetch AI recommendation.'));
-        resolve(results.length > 0 ? results[0] : null);
-      });
-    });
-  }
-
-  static async generateAndSaveAIRecommendation(reviewId, token) {
-    const review = await this.getReviewById(reviewId, token);
-    if (!review || !review.menu || !review.comment) {
-      throw new Error('Review, menu, or comment not found for AI recommendation.');
-    }
-    if (review.sentiment !== 'negative') {
-        return { message: "AI Recommendation is typically generated for negative reviews.", recommendation: null };
-    }
-
-    try {
-      const aiPrompt = `Buat tanggapan singkat (1 paragraf) untuk review negatif berikut tentang menu "${review.menu.name}": "${review.comment}". Sertakan saran perbaikan yang jelas dan padat.`;
-      const aiResponse = await axios.post("https://openrouter.ai/api/v1/chat/completions", {
-        model: "microsoft/phi-3-medium-128k-instruct:free", // Ganti model jika perlu
-        messages: [{ role: "user", content: aiPrompt }]
-      }, {
-        headers: {
-          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": process.env.APP_URL || "http://localhost", // Ambil dari .env
-          "X-Title": process.env.APP_NAME || "EAI Food Review System" // Ambil dari .env
-        },
-        timeout: 30000 // 30 detik timeout
-      });
-
-      if (aiResponse.data && aiResponse.data.choices && aiResponse.data.choices.length > 0) {
-        const recommendationText = aiResponse.data.choices[0].message.content;
-        const savedRecommendation = await this.saveAIRecommendation(reviewId, recommendationText);
-        return savedRecommendation;
-      } else {
-        throw new Error('AI did not provide a valid recommendation response.');
-      }
-    } catch (error) {
-      console.error("Error generating or saving AI recommendation:", error.response ? error.response.data : error.message);
-      throw new Error(`Failed to generate AI recommendation: ${error.message}`);
-    }
   }
 }
 

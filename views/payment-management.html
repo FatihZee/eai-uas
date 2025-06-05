@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Management - Restaurant</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    :root {
+      --primary-color: #6366f1;
+      --secondary-color: #4f46e5;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --danger-color: #ef4444;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f3f4f6;
+      color: #374151;
+    }
+    
+    .card {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+    
+    .card:hover {
+      transform: translateY(-2px);
+    }
+    
+    .payment-status {
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    
+    .status-pending { background-color: rgba(245, 158, 11, 0.1); color: var(--warning-color); }
+    .status-paid { background-color: rgba(16, 185, 129, 0.1); color: var(--success-color); }
+    .status-failed { background-color: rgba(239, 68, 68, 0.1); color: var(--danger-color); }
+    .status-cancelled { background-color: rgba(107, 114, 128, 0.1); color: #6b7280; }
+
+    .payment-card {
+      border-left: 4px solid var(--primary-color);
+      transition: all 0.3s ease;
+    }
+
+    .payment-card:hover {
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .stats-card {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      color: white;
+      border-radius: 12px;
+    }
+
+    .midtrans-button {
+      background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+      border: none;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div id="navbarContainer"></div>
+
+  <div class="container mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="mb-1"><i class="fas fa-credit-card me-2"></i>Payment Management</h2>
+        <p class="text-muted mb-0">Manage customer payments and transactions</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" onclick="loadPayments()">
+          <i class="fas fa-sync-alt me-1"></i>Refresh
+        </button>
+        <button class="btn btn-primary" onclick="showCreatePaymentModal()">
+          <i class="fas fa-plus me-1"></i>Create Payment
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="card stats-card text-center">
+          <div class="card-body">
+            <i class="fas fa-money-bill fa-2x mb-2"></i>
+            <h4 class="mb-0" id="totalPayments">0</h4>
+            <small>Total Payments</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+            <h4 class="mb-0" id="pendingPayments">0</h4>
+            <small class="text-muted">Pending</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+            <h4 class="mb-0" id="paidPayments">0</h4>
+            <small class="text-muted">Paid</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <i class="fas fa-chart-line fa-2x text-success mb-2"></i>
+            <h4 class="mb-0" id="totalAmount">Rp 0</h4>
+            <small class="text-muted">Total Amount</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Controls -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-3">
+            <label class="form-label">Filter by Status</label>
+            <select class="form-select" id="statusFilter" onchange="filterPayments()">
+              <option value="">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="paid">Paid</option>
+              <option value="failed">Failed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Search</label>
+            <input type="text" class="form-control" id="searchFilter" placeholder="Search by Order ID..." onkeyup="filterPayments()">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Date From</label>
+            <input type="date" class="form-control" id="dateFromFilter" onchange="filterPayments()">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Date To</label>
+            <input type="date" class="form-control" id="dateToFilter" onchange="filterPayments()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payments List -->
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Payment Transactions</h5>
+      </div>
+      <div class="card-body p-0">
+        <!-- Loading -->
+        <div id="loadingSpinner" class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+
+        <!-- Payments Container -->
+        <div id="paymentsContainer" style="display: none;"></div>
+        
+        <!-- Empty State -->
+        <div id="emptyState" class="text-center py-5" style="display: none;">
+          <i class="fas fa-credit-card fa-4x text-muted mb-3"></i>
+          <h4>No Payments Found</h4>
+          <p class="text-muted">No payment transactions available.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Payment Modal -->
+  <div class="modal fade" id="createPaymentModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-plus me-2"></i>Create New Payment
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="createPaymentForm">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Select Order</label>
+              <select class="form-select" id="orderSelect" required>
+                <option value="">Loading orders...</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Create Payment</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Details Modal -->
+  <div class="modal fade" id="paymentDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-receipt me-2"></i>Payment Details
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="paymentDetailsContent">
+          <!-- Content will be loaded here -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn midtrans-button" id="openMidtransBtn" style="display: none;">
+            <i class="fas fa-external-link-alt me-1"></i>Open in Midtrans
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      let allPayments = [];
+      const createPaymentModal = new bootstrap.Modal(document.getElementById("createPaymentModal"));
+      const paymentDetailsModal = new bootstrap.Modal(document.getElementById("paymentDetailsModal"));
+
+      // GraphQL helper function
+      async function fetchGraphQL(url, query, variables = {}) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ query, variables })
+          });
+          
+          const result = await response.json();
+          if (result.errors) {
+            console.error('GraphQL errors:', result.errors);
+            throw new Error(result.errors.map(e => e.message).join(', '));
+          }
+          return result.data;
+        } catch (error) {
+          console.error('GraphQL request failed:', error);
+          throw error;
+        }
+      }
+
+      // Load payment statistics
+      async function loadPaymentStats() {
+        try {
+          const statsData = await fetchGraphQL('http://localhost:4005/graphql', `
+            query {
+              paymentStats {
+                total_payments
+                total_amount
+                pending_count
+                paid_count
+                failed_count
+                cancelled_count
+              }
+            }
+          `);
+
+          if (statsData?.paymentStats) {
+            const stats = statsData.paymentStats;
+            document.getElementById('totalPayments').textContent = stats.total_payments;
+            document.getElementById('pendingPayments').textContent = stats.pending_count;
+            document.getElementById('paidPayments').textContent = stats.paid_count;
+            document.getElementById('totalAmount').textContent = `Rp ${parseInt(stats.total_amount || 0).toLocaleString()}`;
+          }
+        } catch (error) {
+          console.error('Error loading payment stats:', error);
+        }
+      }
+
+      // Load all payments
+      async function loadPayments() {
+        document.getElementById('loadingSpinner').style.display = 'block';
+        document.getElementById('paymentsContainer').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'none';
+
+        try {
+          // Note: Untuk security, mungkin perlu dibatasi berdasarkan role user
+          const paymentsData = await fetchGraphQL('http://localhost:4005/graphql', `
+            query {
+              payments {
+                id
+                user_id
+                order_id
+                midtrans_order_id
+                amount
+                payment_method
+                status
+                snap_token
+                redirect_url
+                transaction_time
+                user {
+                  id
+                  name
+                  email
+                }
+                order {
+                  id
+                  total_price
+                  created_at
+                  user_id
+                  menu_id
+                  quantity
+                }
+              }
+            }
+          `);
+
+          if (paymentsData?.payments) {
+            allPayments = paymentsData.payments;
+            
+            if (allPayments.length === 0) {
+              document.getElementById('emptyState').style.display = 'block';
+            } else {
+              displayPayments(allPayments);
+              document.getElementById('paymentsContainer').style.display = 'block';
+            }
+            
+            await loadPaymentStats();
+          }
+        } catch (error) {
+          console.error('Error loading payments:', error);
+          document.getElementById('emptyState').style.display = 'block';
+          document.getElementById('emptyState').innerHTML = `
+            <i class="fas fa-exclamation-triangle text-danger fa-4x mb-3"></i>
+            <h4>Error Loading Payments</h4>
+            <p class="text-muted">${error.message}</p>
+          `;
+        } finally {
+          document.getElementById('loadingSpinner').style.display = 'none';
+        }
+      }
+
+      // Display payments
+      function displayPayments(payments) {
+        const container = document.getElementById('paymentsContainer');
+        
+        if (payments.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-5">
+              <i class="fas fa-search fa-3x text-muted mb-3"></i>
+              <h5>No payments match your filter</h5>
+              <p class="text-muted">Try adjusting your search criteria</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = payments.map(payment => {
+          const statusClass = getPaymentStatusClass(payment.status);
+          const statusText = payment.status.charAt(0).toUpperCase() + payment.status.slice(1);
+
+          return `
+            <div class="payment-card card m-3">
+              <div class="card-body">
+                <div class="row align-items-center">
+                  <div class="col-md-2">
+                    <h6 class="mb-1">Payment #${payment.id}</h6>
+                    <small class="text-muted">Order #${payment.order_id}</small>
+                  </div>
+                  <div class="col-md-2">
+                    <h6 class="mb-1">${payment.user?.name || 'Unknown User'}</h6>
+                    <small class="text-muted">${payment.user?.email || 'No email'}</small>
+                  </div>
+                  <div class="col-md-2">
+                    <h6 class="mb-1">Rp ${parseInt(payment.amount).toLocaleString()}</h6>
+                    <small class="text-muted">${payment.payment_method || 'Midtrans'}</small>
+                  </div>
+                  <div class="col-md-2">
+                    <span class="payment-status ${statusClass}">${statusText}</span>
+                  </div>
+                  <div class="col-md-2">
+                    <small class="text-muted">${new Date(payment.transaction_time).toLocaleDateString()}</small>
+                  </div>
+                  <div class="col-md-2 text-end">
+                    <div class="btn-group btn-group-sm">
+                      <button class="btn btn-outline-primary" onclick="viewPaymentDetails('${payment.id}')" title="View Details">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      ${payment.status === 'pending' ? `
+                        <button class="btn btn-outline-success" onclick="processPayment('${payment.id}')" title="Mark as Paid">
+                          <i class="fas fa-check"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="cancelPayment('${payment.id}')" title="Cancel">
+                          <i class="fas fa-times"></i>
+                        </button>
+                      ` : ''}
+                      ${payment.redirect_url ? `
+                        <button class="btn btn-outline-info" onclick="openMidtrans('${payment.redirect_url}')" title="Open Midtrans">
+                          <i class="fas fa-external-link-alt"></i>
+                        </button>
+                      ` : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Filter payments
+      function filterPayments() {
+        const statusFilter = document.getElementById('statusFilter').value;
+        const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+        const dateFromFilter = document.getElementById('dateFromFilter').value;
+        const dateToFilter = document.getElementById('dateToFilter').value;
+
+        let filteredPayments = allPayments.filter(payment => {
+          const matchesStatus = !statusFilter || payment.status === statusFilter;
+          const matchesSearch = !searchFilter || 
+            payment.order_id.toString().includes(searchFilter) ||
+            payment.id.toString().includes(searchFilter) ||
+            payment.user?.name.toLowerCase().includes(searchFilter);
+          
+          let matchesDate = true;
+          if (dateFromFilter || dateToFilter) {
+            const paymentDate = new Date(payment.transaction_time).toISOString().split('T')[0];
+            if (dateFromFilter && paymentDate < dateFromFilter) matchesDate = false;
+            if (dateToFilter && paymentDate > dateToFilter) matchesDate = false;
+          }
+
+          return matchesStatus && matchesSearch && matchesDate;
+        });
+
+        displayPayments(filteredPayments);
+      }
+
+      // Get payment status class
+      function getPaymentStatusClass(status) {
+        switch (status) {
+          case 'paid': return 'status-paid';
+          case 'pending': return 'status-pending';
+          case 'failed': return 'status-failed';
+          case 'cancelled': return 'status-cancelled';
+          default: return 'status-pending';
+        }
+      }
+
+      // Load unpaid orders for payment creation
+      async function loadUnpaidOrders() {
+        try {
+          const ordersData = await fetchGraphQL('http://localhost:4003/graphql', `
+            query {
+              orders {
+                id
+                user_id
+                menu_id
+                quantity
+                total_price
+                created_at
+                user {
+                  name
+                }
+                menu {
+                  name
+                }
+              }
+            }
+          `);
+
+          if (ordersData?.orders) {
+            const orders = ordersData.orders;
+            
+            // Filter orders that don't have successful payments
+            const unpaidOrders = [];
+            for (const order of orders) {
+              try {
+                const paymentData = await fetchGraphQL('http://localhost:4005/graphql', `
+                  query GetPaymentsByOrder($orderId: ID!) {
+                    paymentsByOrder(orderId: $orderId) {
+                      status
+                    }
+                  }
+                `, { orderId: order.id.toString() });
+
+                const hasSuccessfulPayment = paymentData?.paymentsByOrder?.some(p => p.status === 'paid');
+                if (!hasSuccessfulPayment) {
+                  unpaidOrders.push(order);
+                }
+              } catch (error) {
+                // If error fetching payments, assume order is unpaid
+                unpaidOrders.push(order);
+              }
+            }
+
+            const orderSelect = document.getElementById('orderSelect');
+            orderSelect.innerHTML = unpaidOrders.length > 0 
+              ? unpaidOrders.map(order => `
+                  <option value="${order.id}">
+                    Order #${order.id} - ${order.menu?.name} - ${order.user?.name} - Rp ${parseInt(order.total_price).toLocaleString()}
+                  </option>
+                `).join('')
+              : '<option value="">No unpaid orders available</option>';
+          }
+        } catch (error) {
+          console.error('Error loading unpaid orders:', error);
+          document.getElementById('orderSelect').innerHTML = '<option value="">Error loading orders</option>';
+        }
+      }
+
+      // Show create payment modal
+      window.showCreatePaymentModal = async () => {
+        await loadUnpaidOrders();
+        createPaymentModal.show();
+      };
+
+      // Handle create payment form submission
+      document.getElementById('createPaymentForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const orderId = document.getElementById('orderSelect').value;
+
+        if (!orderId) {
+          Swal.fire({
+            title: 'Error',
+            text: 'Please select an order',
+            icon: 'error',
+            confirmButtonColor: '#6366f1'
+          });
+          return;
+        }
+
+        try {
+          Swal.fire({
+            title: 'Creating Payment...',
+            text: 'Please wait while we process your request',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+
+          const paymentData = await fetchGraphQL('http://localhost:4005/graphql', `
+            mutation CreatePayment($input: CreatePaymentInput!) {
+              createPayment(input: $input) {
+                message
+                redirect_url
+                payment {
+                  id
+                  status
+                }
+              }
+            }
+          `, { input: { orderId } });
+
+          if (paymentData?.createPayment) {
+            Swal.fire({
+              title: 'Payment Created!',
+              text: paymentData.createPayment.message,
+              icon: 'success',
+              confirmButtonColor: '#6366f1'
+            }).then(() => {
+              if (paymentData.createPayment.redirect_url) {
+                window.open(paymentData.createPayment.redirect_url, '_blank');
+              }
+              createPaymentModal.hide();
+              loadPayments();
+            });
+          }
+        } catch (error) {
+          Swal.fire({
+            title: 'Error',
+            text: `Failed to create payment: ${error.message}`,
+            icon: 'error',
+            confirmButtonColor: '#6366f1'
+          });
+        }
+      });
+
+      // View payment details
+      window.viewPaymentDetails = async (paymentId) => {
+        try {
+          const paymentData = await fetchGraphQL('http://localhost:4005/graphql', `
+            query GetPayment($id: ID!) {
+              payment(id: $id) {
+                id
+                user_id
+                order_id
+                midtrans_order_id
+                amount
+                payment_method
+                status
+                snap_token
+                redirect_url
+                transaction_time
+                user {
+                  id
+                  name
+                  email
+                  phone
+                }
+                order {
+                  id
+                  total_price
+                  created_at
+                  user_id
+                  menu_id
+                  quantity
+                }
+              }
+            }
+          `, { id: paymentId });
+
+          if (paymentData?.payment) {
+            const payment = paymentData.payment;
+            const statusClass = getPaymentStatusClass(payment.status);
+            
+            document.getElementById('paymentDetailsContent').innerHTML = `
+              <div class="row">
+                <div class="col-md-6">
+                  <h6>Payment Information</h6>
+                  <table class="table table-sm">
+                    <tr><td><strong>Payment ID:</strong></td><td>#${payment.id}</td></tr>
+                    <tr><td><strong>Order ID:</strong></td><td>#${payment.order_id}</td></tr>
+                    <tr><td><strong>Midtrans Order ID:</strong></td><td>${payment.midtrans_order_id}</td></tr>
+                    <tr><td><strong>Amount:</strong></td><td>Rp ${parseInt(payment.amount).toLocaleString()}</td></tr>
+                    <tr><td><strong>Status:</strong></td><td><span class="payment-status ${statusClass}">${payment.status}</span></td></tr>
+                    <tr><td><strong>Payment Method:</strong></td><td>${payment.payment_method || 'Midtrans'}</td></tr>
+                    <tr><td><strong>Transaction Time:</strong></td><td>${new Date(payment.transaction_time).toLocaleString()}</td></tr>
+                  </table>
+                </div>
+                <div class="col-md-6">
+                  <h6>Customer Information</h6>
+                  <table class="table table-sm">
+                    <tr><td><strong>Name:</strong></td><td>${payment.user?.name || 'Unknown'}</td></tr>
+                    <tr><td><strong>Email:</strong></td><td>${payment.user?.email || 'No email'}</td></tr>
+                    <tr><td><strong>Phone:</strong></td><td>${payment.user?.phone || 'No phone'}</td></tr>
+                  </table>
+                  
+                  <h6 class="mt-3">Order Information</h6>
+                  <table class="table table-sm">
+                    <tr><td><strong>Order Total:</strong></td><td>Rp ${parseInt(payment.order?.total_price || 0).toLocaleString()}</td></tr>
+                    <tr><td><strong>Quantity:</strong></td><td>${payment.order?.quantity || 'N/A'}</td></tr>
+                    <tr><td><strong>Order Date:</strong></td><td>${payment.order?.created_at ? new Date(payment.order.created_at).toLocaleDateString() : 'N/A'}</td></tr>
+                  </table>
+                </div>
+              </div>
+            `;
+
+            const openMidtransBtn = document.getElementById('openMidtransBtn');
+            if (payment.redirect_url) {
+              openMidtransBtn.style.display = 'block';
+              openMidtransBtn.onclick = () => window.open(payment.redirect_url, '_blank');
+            } else {
+              openMidtransBtn.style.display = 'none';
+            }
+
+            paymentDetailsModal.show();
+          }
+        } catch (error) {
+          Swal.fire({
+            title: 'Error',
+            text: `Failed to load payment details: ${error.message}`,
+            icon: 'error',
+            confirmButtonColor: '#6366f1'
+          });
+        }
+      };
+
+      // Process payment (mark as paid)
+      window.processPayment = async (paymentId) => {
+        const result = await Swal.fire({
+          title: 'Process Payment',
+          text: 'Mark this payment as paid?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#10b981',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: 'Yes, mark as paid',
+          cancelButtonText: 'Cancel'
+        });
+
+        if (result.isConfirmed) {
+          try {
+            await fetchGraphQL('http://localhost:4005/graphql', `
+              mutation ProcessPayment($id: ID!) {
+                processPayment(id: $id) {
+                  message
+                  payment {
+                    id
+                    status
+                  }
+                }
+              }
+            `, { id: paymentId });
+
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'success',
+              title: 'Payment processed successfully!',
+              showConfirmButton: false,
+              timer: 2000
+            });
+
+            loadPayments();
+          } catch (error) {
+            Swal.fire({
+              title: 'Error',
+              text: `Failed to process payment: ${error.message}`,
+              icon: 'error',
+              confirmButtonColor: '#6366f1'
+            });
+          }
+        }
+      };
+
+      // Cancel payment
+      window.cancelPayment = async (paymentId) => {
+        const result = await Swal.fire({
+          title: 'Cancel Payment',
+          text: 'Are you sure you want to cancel this payment?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#ef4444',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: 'Yes, cancel it',
+          cancelButtonText: 'No, keep it'
+        });
+
+        if (result.isConfirmed) {
+          try {
+            await fetchGraphQL('http://localhost:4005/graphql', `
+              mutation CancelPayment($id: ID!) {
+                cancelPayment(id: $id) {
+                  message
+                  payment {
+                    id
+                    status
+                  }
+                }
+              }
+            `, { id: paymentId });
+
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'success',
+              title: 'Payment cancelled successfully!',
+              showConfirmButton: false,
+              timer: 2000
+            });
+
+            loadPayments();
+          } catch (error) {
+            Swal.fire({
+              title: 'Error',
+              text: `Failed to cancel payment: ${error.message}`,
+              icon: 'error',
+              confirmButtonColor: '#6366f1'
+            });
+          }
+        }
+      };
+
+      // Open Midtrans
+      window.openMidtrans = (redirectUrl) => {
+        window.open(redirectUrl, '_blank');
+      };
+
+      // Global functions
+      window.loadPayments = loadPayments;
+      window.filterPayments = filterPayments;
+
+      // Logout function
+      window.logout = () => {
+        localStorage.clear();
+        window.location.href = "index.html";
+      };
+
+      // Initialize
+      loadPayments();
+    });
+  </script>
+
+  <!-- Load navbar -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      fetch('navbar.html')
+        .then(response => response.text())
+        .then(data => {
+          document.getElementById('navbarContainer').innerHTML = data;
+          const scripts = document.getElementById('navbarContainer').querySelectorAll('script');
+          scripts.forEach(script => {
+            const newScript = document.createElement('script');
+            newScript.textContent = script.textContent;
+            document.body.appendChild(newScript);
+          });
+          if (typeof initNavbar === 'function') {
+            initNavbar();
+          }
+        })
+        .catch(error => console.error('Error loading navbar:', error));
+    });
+  </script>
+</body>
+</html>
