@@ -1,151 +1,201 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>All Users | EAI Admin</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users Management - Restaurant</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
+    :root {
+      --primary-color: #6366f1;
+      --secondary-color: #4f46e5;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --danger-color: #ef4444;
+      --dark-color: #1f2937;
+    }
+    
     body {
-      background-color: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f3f4f6;
+      color: #374151;
     }
+    
     .card {
-      border-radius: 15px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       border: none;
-      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
     }
+    
     .card-header {
-      background: linear-gradient(45deg, #6c5ce7, #a29bfe);
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
       color: white;
-      border-radius: 0 !important;
       font-weight: 600;
       border: none;
-      margin: 0;
-      padding: 1.5rem;
     }
-    .table thead {
-      background: linear-gradient(45deg, #6c5ce7, #a29bfe);
-      color: white;
-    }
-    .btn-edit {
-      background: linear-gradient(45deg, #f0932b, #ffbe76);
-      border: none;
-      color: white;
-      transition: all 0.3s;
-    }
-    .btn-edit:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(240, 147, 43, 0.3);
-    }
-    .btn-delete {
-      background: linear-gradient(45deg, #eb4d4b, #ff7979);
-      border: none;
-      color: white;
-      transition: all 0.3s;
-    }
-    .btn-delete:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(235, 77, 75, 0.3);
-    }
-    .table-hover tbody tr:hover {
-      background-color: rgba(108, 92, 231, 0.05);
-    }
-    .user-badge {
-      background: linear-gradient(45deg, #6c5ce7, #a29bfe);
-      color: white;
-      font-size: 0.75rem;
-      padding: 3px 8px;
-      border-radius: 10px;
-      display: inline-block;
-      margin-left: 5px;
-    }
-    .animate-pulse {
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.5; }
-      100% { opacity: 1; }
-    }
-    .modal-header {
-      background: linear-gradient(45deg, #6c5ce7, #a29bfe);
-      color: white;
-      border-bottom: none;
-    }
-    .modal-content {
-      border: none;
-      border-radius: 15px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-    .btn-close {
-      filter: brightness(0) invert(1);
-    }
+    
     .btn-primary {
-      background: linear-gradient(45deg, #6c5ce7, #a29bfe);
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
       border: none;
-      transition: all 0.3s;
     }
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(108, 92, 231, 0.3);
+    
+    .table {
+      border-radius: 12px;
+      overflow: hidden;
     }
-    .table td, .table th {
+    
+    .table th {
+      background-color: #f8fafc;
+      border: none;
+      font-weight: 600;
+      color: var(--dark-color);
+    }
+    
+    .table td {
+      border: none;
       vertical-align: middle;
     }
-    .user-avatar {
-      width: 35px;
-      height: 35px;
-      border-radius: 50%;
-      background-color: #6c5ce7;
+    
+    .modal-content {
+      border: none;
+      border-radius: 12px;
+    }
+    
+    .modal-header {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
       color: white;
-      display: inline-flex;
+      border: none;
+    }
+    
+    .form-control, .form-select {
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+    
+    .btn {
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-sm {
+      padding: 0.4rem 0.8rem;
+    }
+    
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      display: flex;
       align-items: center;
       justify-content: center;
-      margin-right: 10px;
-      font-weight: bold;
+      color: white;
+      font-weight: 600;
     }
-    .card-body {
-      padding: 1.5rem;
-    }
-    .table-container {
-      border-radius: 15px;
-      overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    
+    .user-stats {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
     }
   </style>
 </head>
 <body>
   <div id="navbarContainer"></div>
 
-  <div class="container my-5">
-    <div class="card mb-4">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h3 class="mb-0 text-white"><i class="fas fa-users me-2"></i>Users Management</h3>
-        <div>
-          <button class="btn btn-light btn-sm" id="refreshBtn">
-            <i class="fas fa-sync-alt me-1"></i> Refresh
-          </button>
+  <div class="container mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="mb-1"><i class="fas fa-users me-2"></i>Users Management</h2>
+        <p class="text-muted mb-0">Manage system users and their access</p>
+      </div>
+    </div>
+
+    <!-- User Stats Cards -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="user-stats">
+          <div class="d-flex align-items-center">
+            <i class="fas fa-users fa-2x me-3"></i>
+            <div>
+              <h5 class="mb-0" id="totalUsersCount">0</h5>
+              <small>Total Users</small>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="card-body">
-        <div class="table-container">
-          <table class="table table-hover align-middle mb-0">
+      <div class="col-md-3">
+        <div class="user-stats" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          <div class="d-flex align-items-center">
+            <i class="fas fa-user-plus fa-2x me-3"></i>
+            <div>
+              <h5 class="mb-0" id="newUsersCount">0</h5>
+              <small>New This Month</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="user-stats" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+          <div class="d-flex align-items-center">
+            <i class="fas fa-shopping-cart fa-2x me-3"></i>
+            <div>
+              <h5 class="mb-0" id="activeOrdersCount">0</h5>
+              <small>Active Orders</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="user-stats" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+          <div class="d-flex align-items-center">
+            <i class="fas fa-star fa-2x me-3"></i>
+            <div>
+              <h5 class="mb-0" id="totalReviewsCount">0</h5>
+              <small>Total Reviews</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-list me-2"></i>All Users</h5>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
             <thead>
               <tr>
-                <th>ID</th>
                 <th>User</th>
                 <th>Email</th>
                 <th>Phone</th>
+                <th>Joined</th>
+                <th>Orders</th>
+                <th>Reviews</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="userTableBody">
               <tr>
-                <td colspan="5" class="text-center py-4">
-                  <div class="animate-pulse">
-                    <i class="fas fa-spinner fa-spin me-2"></i> Loading users...
+                <td colspan="7" class="text-center py-4">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
                   </div>
                 </td>
               </tr>
@@ -156,38 +206,50 @@
     </div>
   </div>
 
-  <!-- Modal Edit User -->
+  <!-- Edit User Modal -->
   <div class="modal fade" id="editUserModal" tabindex="-1">
     <div class="modal-dialog">
-      <form class="modal-content" id="editUserForm">
+      <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i>Edit User</h5>
+          <h5 class="modal-title">
+            <i class="fas fa-user-edit me-2"></i>Edit User
+          </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body">
-          <input type="hidden" id="editUserId">
-          <div class="mb-3">
-            <label class="form-label"><i class="fas fa-user me-2"></i>Full Name</label>
-            <input type="text" class="form-control" id="editName" required>
+        <form id="editUserForm">
+          <div class="modal-body">
+            <input type="hidden" id="editUserId">
+            
+            <div class="mb-3">
+              <label for="editName" class="form-label">Name</label>
+              <input type="text" class="form-control" id="editName" required>
+            </div>
+            
+            <div class="mb-3">
+              <label for="editEmail" class="form-label">Email</label>
+              <input type="email" class="form-control" id="editEmail" required>
+            </div>
+            
+            <div class="mb-3">
+              <label for="editPhone" class="form-label">Phone</label>
+              <input type="tel" class="form-control" id="editPhone">
+            </div>
+            
+            <div class="mb-3">
+              <label for="editPassword" class="form-label">New Password <small class="text-muted">(leave blank to keep current)</small></label>
+              <input type="password" class="form-control" id="editPassword">
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label"><i class="fas fa-envelope me-2"></i>Email</label>
-            <input type="email" class="form-control" id="editEmail" required>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+              <i class="fas fa-times me-1"></i>Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save me-1"></i>Save Changes
+            </button>
           </div>
-          <div class="mb-3">
-            <label class="form-label"><i class="fas fa-phone me-2"></i>Phone</label>
-            <input type="text" class="form-control" id="editPhone">
-          </div>
-          <div class="mb-3">
-            <label class="form-label"><i class="fas fa-lock me-2"></i>Password (isi jika ingin diubah)</label>
-            <input type="password" class="form-control" id="editPassword">
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-primary" type="submit"><i class="fas fa-save me-2"></i>Save Changes</button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -195,84 +257,157 @@
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const token = localStorage.getItem("token");
-      if (!token) return window.location.href = "index.html";
+      if (!token) {
+        window.location.href = "index.html";
+        return;
+      }
 
       const userTableBody = document.getElementById("userTableBody");
-      const editUserForm = document.getElementById("editUserForm");
       const editUserModal = new bootstrap.Modal(document.getElementById("editUserModal"));
-      const refreshBtn = document.getElementById("refreshBtn");
+      const editUserForm = document.getElementById("editUserForm");
 
-      async function loadUsers() {
+      // GraphQL helper function
+      async function fetchGraphQL(url, query, variables = {}) {
         try {
-          userTableBody.innerHTML = `
-            <tr>
-              <td colspan="5" class="text-center py-4">
-                <div class="animate-pulse">
-                  <i class="fas fa-spinner fa-spin me-2"></i> Loading users...
-                </div>
-              </td>
-            </tr>
-          `;
-          
-          const res = await fetch("http://localhost:3001/users", {
-            headers: { Authorization: "Bearer " + token }
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ query, variables })
           });
           
-          const users = await res.json();
+          const result = await response.json();
+          if (result.errors) {
+            console.error('GraphQL errors:', result.errors);
+            throw new Error(result.errors.map(e => e.message).join(', '));
+          }
+          return result.data;
+        } catch (error) {
+          console.error('GraphQL request failed:', error);
+          throw error;
+        }
+      }
 
-          userTableBody.innerHTML = users.map(user => {
-            // Create initials for avatar
-            const nameParts = user.name.trim().split(' ');
-            const initials = (
-              (nameParts[0]?.[0] || '') + 
-              (nameParts[nameParts.length - 1]?.[0] || '')
-            ).toUpperCase();
+      // Load users with their stats using GraphQL
+      async function loadUsers() {
+        try {
+          // Get users with their related data
+          const usersData = await fetchGraphQL('http://localhost:4001/graphql', `
+            query {
+              users {
+                id
+                name
+                email
+                phone
+                created_at
+                orders {
+                  id
+                  total_price
+                }
+                reviews {
+                  id
+                  rating
+                }
+              }
+            }
+          `);
 
+          if (usersData?.users) {
+            const users = usersData.users;
             
-            return `
-              <tr>
-                <td>#${user.id}</td>
-                <td>
-                  <div class="d-flex align-items-center">
-                    <div class="user-avatar">${initials}</div>
-                    <div>
-                      <div class="fw-bold">${user.name}</div>
+            // Update stats
+            document.getElementById('totalUsersCount').textContent = users.length;
+            
+            // Calculate new users this month
+            const thisMonth = new Date();
+            thisMonth.setDate(1);
+            const newUsers = users.filter(user => 
+              new Date(user.created_at) >= thisMonth
+            ).length;
+            document.getElementById('newUsersCount').textContent = newUsers;
+            
+            // Calculate total active orders and reviews
+            const totalOrders = users.reduce((sum, user) => sum + (user.orders?.length || 0), 0);
+            const totalReviews = users.reduce((sum, user) => sum + (user.reviews?.length || 0), 0);
+            
+            document.getElementById('activeOrdersCount').textContent = totalOrders;
+            document.getElementById('totalReviewsCount').textContent = totalReviews;
+
+            // Render users table
+            userTableBody.innerHTML = users.map(user => {
+              const userInitials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+              const ordersCount = user.orders?.length || 0;
+              const reviewsCount = user.reviews?.length || 0;
+              const avgRating = user.reviews?.length > 0 
+                ? (user.reviews.reduce((sum, r) => sum + r.rating, 0) / user.reviews.length).toFixed(1)
+                : 'N/A';
+
+              return `
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <div class="user-avatar me-3">${userInitials}</div>
+                      <div>
+                        <div class="fw-bold">${user.name}</div>
+                        <small class="text-muted">ID: ${user.id}</small>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td>${user.email}</td>
-                <td>${user.phone || '<span class="text-muted">Tidak ada</span>'}</td>
-                <td>
-                  <button class="btn btn-sm btn-edit me-1" onclick="editUser(${user.id}, '${user.name}', '${user.email}', '${user.phone || ''}')">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button class="btn btn-sm btn-delete" onclick="deleteUser(${user.id})">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </td>
-              </tr>
-            `;
-          }).join('');
-        } catch (err) {
+                  </td>
+                  <td>${user.email}</td>
+                  <td>${user.phone || '-'}</td>
+                  <td>
+                    <small>${new Date(user.created_at).toLocaleDateString()}</small>
+                  </td>
+                  <td>
+                    <span class="badge bg-primary">${ordersCount} orders</span>
+                  </td>
+                  <td>
+                    <span class="badge bg-success">${reviewsCount} reviews</span>
+                    ${reviewsCount > 0 ? `<br><small class="text-muted">Avg: ${avgRating}★</small>` : ''}
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <button class="btn btn-outline-primary" onclick="editUser('${user.id}', '${user.name}', '${user.email}', '${user.phone || ''}')" title="Edit">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button class="btn btn-outline-danger" onclick="deleteUser('${user.id}')" title="Delete">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                      <a href="user-detail.html?id=${user.id}" class="btn btn-outline-info" title="View Details">
+                        <i class="fas fa-eye"></i>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join("");
+          }
+        } catch (error) {
+          console.error("Error loading users:", error);
           userTableBody.innerHTML = `
             <tr>
-              <td colspan="5" class="text-danger text-center py-4">
-                <i class="fas fa-exclamation-circle me-2"></i> Failed to load users. ${err.message}
+              <td colspan="7" class="text-center text-danger py-4">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Failed to load users: ${error.message}
               </td>
             </tr>
           `;
         }
       }
 
+      // Edit user function
       window.editUser = (id, name, email, phone) => {
         document.getElementById("editUserId").value = id;
         document.getElementById("editName").value = name;
         document.getElementById("editEmail").value = email;
-        document.getElementById("editPhone").value = phone || '';
+        document.getElementById("editPhone").value = phone;
         document.getElementById("editPassword").value = '';
         editUserModal.show();
       };
 
+      // Handle edit user form submission
       editUserForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const id = document.getElementById("editUserId").value;
@@ -281,81 +416,88 @@
         const phone = document.getElementById("editPhone").value;
         const password = document.getElementById("editPassword").value;
 
-        const body = { name, email, phone };
-        if (password) body.password = password;
-
         try {
-          const res = await fetch(`http://localhost:3001/users/${id}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: "Bearer " + token
-            },
-            body: JSON.stringify(body)
+          const input = { name, email, phone };
+          if (password) input.password = password;
+
+          await fetchGraphQL('http://localhost:4001/graphql', `
+            mutation UpdateUser($id: ID!, $input: UpdateUserInput!) {
+              updateUser(id: $id, input: $input) {
+                message
+                user {
+                  id
+                  name
+                  email
+                }
+              }
+            }
+          `, { id, input });
+
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: 'User updated successfully!',
+            showConfirmButton: false,
+            timer: 2000
           });
 
-          if (res.ok) {
-            // Tampilkan notifikasi sukses
-            const alertElement = document.createElement('div');
-            alertElement.className = 'alert alert-success alert-dismissible fade show';
-            alertElement.innerHTML = `
-              <i class="fas fa-check-circle me-2"></i> User berhasil diperbarui!
-              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.querySelector('.container').prepend(alertElement);
-            
-            editUserForm.reset();
-            editUserModal.hide();
-            loadUsers();
-            
-            // Hapus notifikasi setelah 3 detik
-            setTimeout(() => {
-              alertElement.remove();
-            }, 3000);
-          } else {
-            throw new Error("Update failed");
-          }
-        } catch (err) {
-          alert("Update failed: " + err.message);
+          editUserForm.reset();
+          editUserModal.hide();
+          loadUsers();
+        } catch (error) {
+          Swal.fire({
+            title: 'Error',
+            text: `Failed to update user: ${error.message}`,
+            icon: 'error',
+            confirmButtonColor: '#6366f1'
+          });
         }
       });
 
+      // Delete user function
       window.deleteUser = async (id) => {
-        if (!confirm("Apakah Anda yakin ingin menghapus pengguna ini?")) return;
-        
+        const result = await Swal.fire({
+          title: 'Delete User?',
+          text: 'This action cannot be undone!',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#ef4444',
+          cancelButtonColor: '#9ca3af',
+          confirmButtonText: 'Yes, delete it!'
+        });
+
+        if (!result.isConfirmed) return;
+
         try {
-          const res = await fetch(`http://localhost:3001/users/${id}`, {
-            method: "DELETE",
-            headers: { Authorization: "Bearer " + token }
+          await fetchGraphQL('http://localhost:4001/graphql', `
+            mutation DeleteUser($id: ID!) {
+              deleteUser(id: $id) {
+                message
+                id
+              }
+            }
+          `, { id });
+
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: 'User deleted successfully!',
+            showConfirmButton: false,
+            timer: 2000
           });
-          
-          if (res.ok) {
-            // Tampilkan notifikasi sukses
-            const alertElement = document.createElement('div');
-            alertElement.className = 'alert alert-success alert-dismissible fade show';
-            alertElement.innerHTML = `
-              <i class="fas fa-check-circle me-2"></i> User berhasil dihapus!
-              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.querySelector('.container').prepend(alertElement);
-            
-            loadUsers();
-            
-            // Hapus notifikasi setelah 3 detik
-            setTimeout(() => {
-              alertElement.remove();
-            }, 3000);
-          } else {
-            throw new Error("Delete failed");
-          }
-        } catch (err) {
-          alert("Failed to delete user: " + err.message);
+
+          loadUsers();
+        } catch (error) {
+          Swal.fire({
+            title: 'Error',
+            text: `Failed to delete user: ${error.message}`,
+            icon: 'error',
+            confirmButtonColor: '#6366f1'
+          });
         }
       };
-
-      refreshBtn.addEventListener("click", () => {
-        loadUsers();
-      });
 
       window.logout = () => {
         localStorage.clear();
@@ -365,23 +507,20 @@
       loadUsers();
     });
   </script>
+
+  <!-- Load navbar -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Memuat navbar dari file navbar.html
       fetch('navbar.html')
         .then(response => response.text())
         .then(data => {
           document.getElementById('navbarContainer').innerHTML = data;
-          
-          // Memastikan script navbar dijalankan
           const scripts = document.getElementById('navbarContainer').querySelectorAll('script');
           scripts.forEach(script => {
             const newScript = document.createElement('script');
             newScript.textContent = script.textContent;
             document.body.appendChild(newScript);
           });
-          
-          // Jalankan inisialisasi navbar
           if (typeof initNavbar === 'function') {
             initNavbar();
           }

@@ -6,23 +6,96 @@
   <title>Order Detail | EAI Microservices</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .order-card {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .order-header {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: white;
+      border-radius: 12px 12px 0 0;
+      padding: 25px;
+    }
+    
+    .order-content {
+      background-color: white;
+      border-radius: 0 0 12px 12px;
+      padding: 25px;
+    }
+    
+    .info-item {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 12px 0;
+    }
+    
+    .info-item:last-child {
+      border-bottom: none;
+    }
+    
+    .btn-payment {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    
+    .btn-payment:hover {
+      transform: translateY(-2px);
+      color: white;
+    }
+  </style>
 </head>
 <body>
   <div id="navbarContainer"></div>
 
   <div class="container my-5">
-    <div id="orderDetail" class="card shadow p-4">
-      <!-- Order detail -->
+    <div id="orderDetail" class="order-card">
+      <!-- Order detail akan dimuat di sini -->
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading order details...</span>
+        </div>
+      </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const token = localStorage.getItem("token");
       if (!token) return window.location.href = "index.html";
 
       const orderDetail = document.getElementById("orderDetail");
+
+      // GraphQL helper function
+      async function fetchGraphQL(url, query, variables = {}) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ query, variables })
+          });
+          
+          const result = await response.json();
+          if (result.errors) {
+            console.error('GraphQL errors:', result.errors);
+            throw new Error(result.errors.map(e => e.message).join(', '));
+          }
+          return result.data;
+        } catch (error) {
+          console.error('GraphQL request failed:', error);
+          throw error;
+        }
+      }
 
       function getOrderIdFromURL() {
         const params = new URLSearchParams(window.location.search);
@@ -31,27 +104,314 @@
 
       async function loadOrderDetail(id) {
         try {
-          const res = await fetch(`http://localhost:3003/orders/${id}`, {
-            headers: {
-              Authorization: "Bearer " + token
+          // Load order details via GraphQL
+          const orderData = await fetchGraphQL('http://localhost:4003/graphql', `
+            query GetOrder($id: ID!) {
+              order(id: $id) {
+                id
+                user_id
+                menu_id
+                quantity
+                total_price
+                created_at
+                user {
+                  id
+                  name
+                  email
+                  phone
+                }
+                menu {
+                  id
+                  name
+                  description
+                  price
+                }
+              }
             }
-          });
-          if (!res.ok) throw new Error("Order not found");
+          `, { id });
 
-          const data = await res.json();
+          if (!orderData?.order) {
+            throw new Error("Order not found");
+          }
+
+          const order = orderData.order;
+
+          // Check if order has been paid
+          let paymentInfo = null;
+          try {
+            const paymentsData = await fetchGraphQL('http://localhost:4005/graphql', `
+              query GetPaymentsByOrder($orderId: ID!) {
+                paymentsByOrder(orderId: $orderId) {
+                  id
+                  status
+                  amount
+                  payment_method
+                  redirect_url
+                  transaction_time
+                }
+              }
+            `, { orderId: id });
+
+            const payments = paymentsData?.paymentsByOrder || [];
+            const paidPayment = payments.find(p => p.status === 'paid');
+            const pendingPayment = payments.find(p => p.status === 'pending');
+            
+            paymentInfo = paidPayment || pendingPayment || null;
+          } catch (error) {
+            console.log('No payment found for this order');
+          }
 
           orderDetail.innerHTML = `
-            <h4 class="mb-3">Order #${data.id}</h4>
-            <p><strong>User ID:</strong> ${data.user_id}</p>
-            <p><strong>Menu ID:</strong> ${data.menu_id}</p>
-            <p><strong>Quantity:</strong> ${data.quantity}</p>
-            <p><strong>Total Price:</strong> Rp ${parseInt(data.total_price).toLocaleString()}</p>
-            <p class="text-muted small">Created at: ${new Date(data.created_at).toLocaleString()}</p>
+            <div class="order-header">
+              <h3 class="mb-0">
+                <i class="fas fa-receipt me-2"></i>Order #${order.id}
+              </h3>
+            </div>
+            
+            <div class="order-content">
+              <div class="row">
+                <div class="col-md-6">
+                  <h5 class="mb-3"><i class="fas fa-info-circle me-2"></i>Order Information</h5>
+                  
+                  <div class="info-item">
+                    <div class="d-flex justify-content-between">
+                      <span class="text-muted">Order ID:</span>
+                      <strong>#${order.id}</strong>
+                    </div>
+                  </div>
+                  
+                  <div class="info-item">
+                    <div class="d-flex justify-content-between">
+                      <span class="text-muted">Order Date:</span>
+                      <strong>${new Date(order.created_at).toLocaleDateString()}</strong>
+                    </div>
+                  </div>
+                  
+                  <div class="info-item">
+                    <div class="d-flex justify-content-between">
+                      <span class="text-muted">Quantity:</span>
+                      <strong>${order.quantity}x</strong>
+                    </div>
+                  </div>
+                  
+                  <div class="info-item">
+                    <div class="d-flex justify-content-between">
+                      <span class="text-muted">Total Price:</span>
+                      <strong class="text-success">Rp ${parseInt(order.total_price).toLocaleString()}</strong>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="col-md-6">
+                  <h5 class="mb-3"><i class="fas fa-user me-2"></i>Customer Information</h5>
+                  
+                  <div class="info-item">
+                    <div class="d-flex justify-content-between">
+                      <span class="text-muted">Customer Name:</span>
+                      <strong>${order.user?.name || 'Unknown'}</strong>
+                    </div>
+                  </div>
+                  
+                  <div class="info-item">
+                    <div class="d-flex justify-content-between">
+                      <span class="text-muted">Email:</span>
+                      <strong>${order.user?.email || 'Not provided'}</strong>
+                    </div>
+                  </div>
+                  
+                  <div class="info-item">
+                    <div class="d-flex justify-content-between">
+                      <span class="text-muted">Phone:</span>
+                      <strong>${order.user?.phone || 'Not provided'}</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <hr class="my-4">
+              
+              <div class="row">
+                <div class="col-12">
+                  <h5 class="mb-3"><i class="fas fa-utensils me-2"></i>Menu Information</h5>
+                  
+                  <div class="card bg-light">
+                    <div class="card-body">
+                      <div class="row align-items-center">
+                        <div class="col-md-8">
+                          <h6 class="mb-1">${order.menu?.name || 'Unknown Menu'}</h6>
+                          <p class="text-muted mb-2">${order.menu?.description || 'No description available'}</p>
+                          <small class="text-muted">Price per item: Rp ${parseInt(order.menu?.price || 0).toLocaleString()}</small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                          <div class="d-flex align-items-center justify-content-end">
+                            <span class="badge bg-primary me-2">${order.quantity}x</span>
+                            <strong class="text-success">Rp ${parseInt(order.total_price).toLocaleString()}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              ${paymentInfo ? `
+                <hr class="my-4">
+                <div class="row">
+                  <div class="col-12">
+                    <h5 class="mb-3"><i class="fas fa-credit-card me-2"></i>Payment Information</h5>
+                    
+                    <div class="card ${paymentInfo.status === 'paid' ? 'border-success' : 'border-warning'}">
+                      <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <div>
+                            <span class="badge ${paymentInfo.status === 'paid' ? 'bg-success' : 'bg-warning'} mb-2">
+                              ${paymentInfo.status.toUpperCase()}
+                            </span>
+                            <p class="mb-1"><strong>Payment ID:</strong> #${paymentInfo.id}</p>
+                            <p class="mb-1"><strong>Amount:</strong> Rp ${parseInt(paymentInfo.amount).toLocaleString()}</p>
+                            <p class="mb-0"><strong>Date:</strong> ${new Date(paymentInfo.transaction_time).toLocaleDateString()}</p>
+                          </div>
+                          <div class="text-end">
+                            <button class="btn btn-outline-primary btn-sm me-2" onclick="checkPaymentStatus('${paymentInfo.id}')" title="Check Payment Status">
+                              <i class="fas fa-sync me-1"></i>Check Status
+                            </button>
+                            ${paymentInfo.redirect_url && paymentInfo.status === 'pending' ? `
+                              <button class="btn btn-warning" onclick="window.open('${paymentInfo.redirect_url}', '_blank')">
+                                <i class="fas fa-external-link-alt me-1"></i>Continue Payment
+                              </button>
+                            ` : ''}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ` : `
+                <hr class="my-4">
+                <div class="row">
+                  <div class="col-12 text-center">
+                    <h5 class="mb-3"><i class="fas fa-credit-card me-2"></i>Payment</h5>
+                    <p class="text-muted mb-3">This order has not been paid yet.</p>
+                    <button class="btn-payment" onclick="createPaymentForOrder(${order.id})">
+                      <i class="fas fa-credit-card me-2"></i>Create Payment
+                    </button>
+                  </div>
+                </div>
+              `}
+            </div>
           `;
         } catch (err) {
-          orderDetail.innerHTML = `<p class="text-danger">Failed to load order detail.</p>`;
+          orderDetail.innerHTML = `
+            <div class="order-content py-4">
+              <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>Failed to load order detail: ${err.message}
+              </div>
+            </div>
+          `;
+          console.error(err);
         }
       }
+
+      // Create payment for order
+      window.createPaymentForOrder = async (orderId) => {
+        const result = await Swal.fire({
+          title: 'Create Payment',
+          text: `Create payment for Order #${orderId}?`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#10b981',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: 'Yes, create payment',
+          cancelButtonText: 'Cancel'
+        });
+
+        if (result.isConfirmed) {
+          try {
+            Swal.fire({
+              title: 'Creating Payment...',
+              text: 'Please wait while we process your request',
+              allowOutsideClick: false,
+              didOpen: () => { Swal.showLoading(); }
+            });
+
+            const paymentData = await fetchGraphQL('http://localhost:4005/graphql', `
+              mutation CreatePayment($input: CreatePaymentInput!) {
+                createPayment(input: $input) {
+                  message
+                  redirect_url
+                  payment {
+                    id
+                    status
+                  }
+                }
+              }
+            `, { input: { orderId: orderId.toString() } });
+
+            if (paymentData?.createPayment) {
+              Swal.fire({
+                title: 'Payment Created!',
+                text: paymentData.createPayment.message,
+                icon: 'success',
+                confirmButtonColor: '#6366f1'
+              }).then(() => {
+                if (paymentData.createPayment.redirect_url) {
+                  window.open(paymentData.createPayment.redirect_url, '_blank');
+                }
+                // Reload order detail to show payment info
+                loadOrderDetail(orderId);
+              });
+            }
+          } catch (error) {
+            Swal.fire({
+              title: 'Error',
+              text: `Failed to create payment: ${error.message}`,
+              icon: 'error',
+              confirmButtonColor: '#6366f1'
+            });
+          }
+        }
+      };
+
+      // Add payment status checker function
+      window.checkPaymentStatus = async (paymentId) => {
+        try {
+          Swal.fire({
+            title: 'Checking Status...',
+            text: 'Please wait while we check the latest payment status',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+
+          const response = await fetch(`http://localhost:3005/api/payments/${paymentId}/status`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            Swal.fire({
+              title: 'Status Updated!',
+              text: `Payment status: ${result.current_status}`,
+              icon: 'success',
+              confirmButtonColor: '#6366f1'
+            });
+
+            // Reload order details to show updated payment status
+            loadOrderDetail();
+          } else {
+            throw new Error(result.detail || 'Failed to check status');
+          }
+        } catch (error) {
+          Swal.fire({
+            title: 'Error',
+            text: `Failed to check payment status: ${error.message}`,
+            icon: 'error',
+            confirmButtonColor: '#6366f1'
+          });
+        }
+      };
 
       window.logout = () => {
         localStorage.clear();
@@ -62,33 +422,35 @@
       if (orderId) {
         loadOrderDetail(orderId);
       } else {
-        orderDetail.innerHTML = `<p class="text-warning">No order ID provided in URL.</p>`;
+        orderDetail.innerHTML = `
+          <div class="order-content py-4">
+            <div class="alert alert-warning">
+              <i class="fas fa-exclamation-triangle me-2"></i>No order ID provided in URL.
+            </div>
+          </div>
+        `;
       }
     });
   </script>
+  
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Memuat navbar dari file navbar.html
       fetch('navbar.html')
         .then(response => response.text())
         .then(data => {
           document.getElementById('navbarContainer').innerHTML = data;
-          
-          // Memastikan script navbar dijalankan
           const scripts = document.getElementById('navbarContainer').querySelectorAll('script');
           scripts.forEach(script => {
             const newScript = document.createElement('script');
             newScript.textContent = script.textContent;
             document.body.appendChild(newScript);
           });
-          
-          // Jalankan inisialisasi navbar
           if (typeof initNavbar === 'function') {
             initNavbar();
           }
         })
         .catch(error => console.error('Error loading navbar:', error));
     });
-  </script> 
+  </script>
 </body>
 </html>

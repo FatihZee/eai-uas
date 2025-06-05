@@ -1,777 +1,741 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Reviews | EAI Microservices</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-      rel="stylesheet"
-    />
-    <style>
-      :root {
-        --primary-color: #ff7e1d;
-        --secondary-color: #ffc107;
-        --dark-color: #343a40;
-        --light-color: #f8f9fa;
-      }
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reviews Management - Restaurant</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    :root {
+      --primary-color: #6366f1;
+      --secondary-color: #4f46e5;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --danger-color: #ef4444;
+      --dark-color: #1f2937;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f3f4f6;
+      color: #374151;
+    }
+    
+    .card {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+    
+    .card:hover {
+      transform: translateY(-2px);
+    }
+    
+    .card-header {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      color: white;
+      font-weight: 600;
+      border: none;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      border: none;
+    }
+    
+    .rating-stars {
+      color: #fbbf24;
+    }
+    
+    .sentiment-positive { color: var(--success-color); }
+    .sentiment-negative { color: var(--danger-color); }
+    .sentiment-neutral { color: var(--warning-color); }
+    
+    .review-card {
+      border-left: 4px solid var(--primary-color);
+    }
+    
+    .modal-content {
+      border: none;
+      border-radius: 12px;
+    }
+    
+    .modal-header {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      color: white;
+      border: none;
+    }
+    
+    .form-control, .form-select {
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
 
-      body {
-        background-color: #f5f7fa;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      }
+    .order-select-card {
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
 
-      .page-header {
-        background: linear-gradient(
-          135deg,
-          var(--primary-color),
-          var(--secondary-color)
-        );
-        color: white;
-        padding: 2rem 0;
-        margin-bottom: 2rem;
-        border-radius: 0 0 20px 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      }
+    .order-select-card:hover {
+      border-color: var(--primary-color);
+      background-color: rgba(99, 102, 241, 0.05);
+    }
 
-      .review-card {
-        border-radius: 12px;
-        border: none;
-        overflow: hidden;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-      }
+    .order-select-card.selected {
+      border-color: var(--primary-color);
+      background-color: rgba(99, 102, 241, 0.1);
+    }
 
-      .review-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
-      }
+    .ai-recommendation {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="navbarContainer"></div>
 
-      .card-header {
-        background: linear-gradient(to right, #f8f9fa, #fff);
-        border-bottom: 2px solid #f0f0f0;
-      }
+  <div class="container mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="mb-1"><i class="fas fa-star me-2"></i>Reviews Management</h2>
+        <p class="text-muted mb-0">Manage customer reviews and feedback</p>
+      </div>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reviewModal">
+        <i class="fas fa-plus me-2"></i>Add Review
+      </button>
+    </div>
 
-      .rating-stars {
-        color: var(--primary-color);
-        font-size: 1.2rem;
-        letter-spacing: 2px;
-      }
-
-      .btn-custom-primary {
-        background-color: var(--primary-color);
-        border-color: var(--primary-color);
-        color: white;
-        border-radius: 8px;
-        padding: 0.5rem 1.5rem;
-        font-weight: 600;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-      }
-
-      .btn-custom-primary:hover {
-        background-color: #e86c00;
-        border-color: #e86c00;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-      }
-
-      .btn-action {
-        border-radius: 50%;
-        width: 38px;
-        height: 38px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-      }
-
-      .btn-edit {
-        background-color: #ffc107;
-        border-color: #ffc107;
-        color: #343a40;
-      }
-
-      .btn-delete {
-        background-color: #dc3545;
-        border-color: #dc3545;
-        color: white;
-      }
-
-      .btn-edit:hover,
-      .btn-delete:hover {
-        transform: scale(1.1);
-      }
-
-      .comment-area {
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        padding: 1rem;
-        border-left: 4px solid var(--secondary-color);
-      }
-
-      .modal-content {
-        border-radius: 15px;
-        border: none;
-        overflow: hidden;
-      }
-
-      .modal-header {
-        background: linear-gradient(
-          135deg,
-          var(--primary-color),
-          var(--secondary-color)
-        );
-        color: white;
-        border-bottom: none;
-      }
-
-      .modal-footer {
-        border-top: none;
-        padding: 1.5rem;
-      }
-
-      .form-control,
-      .form-select {
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        border: 1px solid #e0e0e0;
-      }
-
-      .form-control:focus,
-      .form-select:focus {
-        box-shadow: 0 0 0 3px rgba(255, 126, 29, 0.25);
-        border-color: var(--primary-color);
-      }
-
-      .empty-state {
-        text-align: center;
-        padding: 3rem;
-        background-color: white;
-        border-radius: 12px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-      }
-
-      .empty-state i {
-        font-size: 4rem;
-        color: #ccc;
-        margin-bottom: 1rem;
-      }
-
-      .btn-close {
-        background-color: rgba(255, 255, 255, 0.8);
-        border-radius: 50%;
-        padding: 0.5rem;
-        opacity: 1;
-      }
-
-      .rating-input {
-        direction: rtl;
-        display: inline-block;
-      }
-
-      .rating-input input {
-        display: none;
-      }
-
-      .rating-input label {
-        color: #ddd;
-        font-size: 2rem;
-        padding: 0 0.1rem;
-        cursor: pointer;
-      }
-
-      .rating-input label:hover,
-      .rating-input label:hover ~ label,
-      .rating-input input:checked ~ label {
-        color: var(--primary-color);
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .animate-fade-in {
-        animation: fadeIn 0.5s ease forwards;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Navbar container -->
-    <div id="navbarContainer"></div>
-
-    <!-- Page Header -->
-    <header class="page-header">
-      <div class="container">
-        <div class="row align-items-center">
-          <div class="col-md-8">
-            <h2 class="fw-bold mb-0">
-              <i class="fas fa-star-half-alt me-2"></i>My Reviews
-            </h2>
-            <p class="text-white-50 mb-0">
-              Share your dining experiences and help others discover great food!
-            </p>
-          </div>
-          <div class="col-md-4 text-md-end mt-3 mt-md-0">
-            <button
-              class="btn btn-custom-primary"
-              data-bs-toggle="modal"
-              data-bs-target="#reviewModal"
-            >
-              <i class="fas fa-pen me-2"></i>Write a Review
-            </button>
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <i class="fas fa-star fa-2x text-warning mb-2"></i>
+            <h4 class="mb-0" id="totalReviews">0</h4>
+            <small class="text-muted">Total Reviews</small>
           </div>
         </div>
       </div>
-    </header>
-
-    <!-- Main content -->
-    <div class="container">
-      <!-- Review listing -->
-      <div id="reviewList" class="row g-4 mb-5">
-        <!-- Review cards -->
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <i class="fas fa-thumbs-up fa-2x text-success mb-2"></i>
+            <h4 class="mb-0" id="positiveReviews">0</h4>
+            <small class="text-muted">Positive</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <i class="fas fa-meh fa-2x text-warning mb-2"></i>
+            <h4 class="mb-0" id="neutralReviews">0</h4>
+            <small class="text-muted">Neutral</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <i class="fas fa-thumbs-down fa-2x text-danger mb-2"></i>
+            <h4 class="mb-0" id="negativeReviews">0</h4>
+            <small class="text-muted">Negative</small>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Modal: Add/Edit Review -->
-    <div class="modal fade" id="reviewModal" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered">
-        <form class="modal-content" id="reviewForm">
-          <div class="modal-header">
-            <h5 class="modal-title" id="reviewModalLabel">
-              <i class="fas fa-star me-2"></i>Add Review
-            </h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-            ></button>
+    <!-- Reviews List -->
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-list me-2"></i>All Reviews</h5>
+      </div>
+      <div class="card-body p-0">
+        <!-- Loading -->
+        <div id="loadingSpinner" class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
           </div>
-          <div class="modal-body p-4">
-            <input type="hidden" id="reviewId" />
+        </div>
 
-            <div class="mb-4">
-              <label class="form-label fw-bold">Select Order</label>
-              <select id="orderSelect" class="form-select" required></select>
-            </div>
+        <!-- Reviews Container -->
+        <div id="reviewsContainer" style="display: none;"></div>
+        
+        <!-- Empty State -->
+        <div id="emptyState" class="text-center py-5" style="display: none;">
+          <i class="fas fa-star fa-4x text-muted mb-3"></i>
+          <h4>No Reviews Yet</h4>
+          <p class="text-muted">Be the first to add a review!</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-            <div class="mb-4">
-              <label class="form-label fw-bold">Rating</label>
-              <div class="rating-input text-center py-2">
-                <input type="radio" id="star5" name="rating" value="5" />
-                <label for="star5" class="me-1"
-                  ><i class="fas fa-star"></i
-                ></label>
-
-                <input type="radio" id="star4" name="rating" value="4" />
-                <label for="star4" class="me-1"
-                  ><i class="fas fa-star"></i
-                ></label>
-
-                <input type="radio" id="star3" name="rating" value="3" />
-                <label for="star3" class="me-1"
-                  ><i class="fas fa-star"></i
-                ></label>
-
-                <input type="radio" id="star2" name="rating" value="2" />
-                <label for="star2" class="me-1"
-                  ><i class="fas fa-star"></i
-                ></label>
-
-                <input type="radio" id="star1" name="rating" value="1" />
-                <label for="star1" class="me-1"
-                  ><i class="fas fa-star"></i
-                ></label>
+  <!-- Review Modal -->
+  <div class="modal fade" id="reviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="reviewModalTitle">
+            <i class="fas fa-star me-2"></i>Add New Review
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="reviewForm">
+          <div class="modal-body">
+            <input type="hidden" id="reviewId">
+            
+            <!-- Order Selection -->
+            <div class="mb-3" id="orderSelectionContainer">
+              <label class="form-label">Select Order to Review</label>
+              <div id="ordersForReview" class="mb-3">
+                <div class="text-center py-3">
+                  <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Loading orders...</span>
+                  </div>
+                </div>
               </div>
-              <input type="hidden" id="rating" value="5" required />
+              <input type="hidden" id="selectedOrderId">
             </div>
-
+            
+            <!-- Rating -->
             <div class="mb-3">
-              <label class="form-label fw-bold">Your Comments</label>
-              <textarea
-                id="comment"
-                class="form-control"
-                rows="4"
-                placeholder="Share your experience..."
-                required
-              ></textarea>
+              <label for="reviewRating" class="form-label">Rating</label>
+              <div class="rating-input d-flex gap-2 mb-2">
+                <button type="button" class="btn btn-outline-warning star-btn" data-rating="1">
+                  <i class="fas fa-star"></i>
+                </button>
+                <button type="button" class="btn btn-outline-warning star-btn" data-rating="2">
+                  <i class="fas fa-star"></i>
+                </button>
+                <button type="button" class="btn btn-outline-warning star-btn" data-rating="3">
+                  <i class="fas fa-star"></i>
+                </button>
+                <button type="button" class="btn btn-outline-warning star-btn" data-rating="4">
+                  <i class="fas fa-star"></i>
+                </button>
+                <button type="button" class="btn btn-outline-warning star-btn" data-rating="5">
+                  <i class="fas fa-star"></i>
+                </button>
+              </div>
+              <input type="hidden" id="reviewRating" required>
+              <small class="text-muted">Click stars to rate (1-5)</small>
+            </div>
+            
+            <!-- Comment -->
+            <div class="mb-3">
+              <label for="reviewComment" class="form-label">Comment</label>
+              <textarea class="form-control" id="reviewComment" rows="4" placeholder="Share your experience..."></textarea>
             </div>
           </div>
-
-          <div class="modal-footer justify-content-center">
-            <button class="btn btn-custom-primary px-4 py-2" type="submit">
-              <i class="fas fa-paper-plane me-2"></i>Submit Review
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+              <i class="fas fa-times me-1"></i>Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save me-1"></i>Save Review
             </button>
           </div>
         </form>
       </div>
     </div>
+  </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!token || !user) {
+        window.location.href = "index.html";
+        return;
+      }
 
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const token = localStorage.getItem("token");
-        const user = JSON.parse(localStorage.getItem("user"));
-        if (!token) window.location.href = "index.html";
+      const reviewModal = new bootstrap.Modal(document.getElementById("reviewModal"));
+      const reviewForm = document.getElementById("reviewForm");
+      const reviewModalTitle = document.getElementById("reviewModalTitle");
 
-        const reviewList = document.getElementById("reviewList");
-        const reviewForm = document.getElementById("reviewForm");
-        const orderSelect = document.getElementById("orderSelect");
-        const reviewModal = new bootstrap.Modal(
-          document.getElementById("reviewModal")
-        );
-        const ratingInput = document.querySelector(".rating-input");
-        const ratingHidden = document.getElementById("rating");
-
-        ratingInput.addEventListener("click", function (e) {
-          if (e.target.tagName === "INPUT") {
-            ratingHidden.value = e.target.value;
+      // GraphQL helper function
+      async function fetchGraphQL(url, query, variables = {}) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ query, variables })
+          });
+          
+          const result = await response.json();
+          if (result.errors) {
+            console.error('GraphQL errors:', result.errors);
+            throw new Error(result.errors.map(e => e.message).join(', '));
           }
-        });
-
-        /**
-         * Format date to a nicer display
-         */
-        function formatDate(dateString) {
-          const options = {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          };
-          return new Date(dateString).toLocaleDateString("en-US", options);
+          return result.data;
+        } catch (error) {
+          console.error('GraphQL request failed:', error);
+          throw error;
         }
+      }
 
-        /**
-         * Fetch and display user reviews
-         */
-        async function loadReviews() {
-          try {
-            reviewList.innerHTML =
-              '<div class="col-12 text-center py-5"><div class="spinner-border text-warning" role="status"></div></div>';
+      // Star rating functionality
+      function initStarRating() {
+        const starBtns = document.querySelectorAll('.star-btn');
+        const ratingInput = document.getElementById('reviewRating');
 
-            const res = await fetch(
-              `http://localhost:3004/reviews/user/${user.id}`
-            );
-            const data = await res.json();
+        starBtns.forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const rating = parseInt(btn.dataset.rating);
+            ratingInput.value = rating;
 
-            if (data.reviews && data.reviews.length > 0) {
-              setTimeout(() => {
-                reviewList.innerHTML = data.reviews
-                  .map(
-                    (review, index) => `
-                <div class="col-lg-6 animate-fade-in" style="animation-delay: ${
-                  index * 0.1
-                }s">
-                  <div class="card review-card h-100">
-                    <div class="card-header d-flex justify-content-between align-items-center py-3">
-                      <h5 class="card-title mb-0 fw-bold">${
-                        review.menu.name
-                      }</h5>
-                      <div class="rating-stars">${"★".repeat(
-                        review.rating
-                      )}${"☆".repeat(5 - review.rating)}</div>
-                    </div>
-                    <div class="card-body">
-                      <div class="comment-area mb-3">
-                        <p class="mb-0">${review.comment}</p>
-                      </div>
-                      <div class="d-flex justify-content-between align-items-center mt-3">
-                        <p class="text-muted small mb-0">
-                          <i class="fas fa-clock me-1"></i> ${formatDate(
-                            review.created_at
-                          )}
-                          <br>
-                          <span class="badge bg-light text-dark mt-1">Order #${
-                            review.order_id
-                          }</span>
-                        </p>
-                        <div class="d-flex gap-2">
-                          <button class="btn btn-action btn-edit" onclick="editReview(${
-                            review.id
-                          }, ${review.order_id}, ${
-                      review.rating
-                    }, \`${review.comment.replace(/`/g, "\\\`")}\`)">
-                            <i class="fas fa-edit"></i>
-                          </button>
-                          <button class="btn btn-action btn-delete" onclick="deleteReview(${
-                            review.id
-                          })">
-                            <i class="fas fa-trash-alt"></i>
-                          </button>
-                          <button class="btn btn-info btn-sm text-white" onclick="viewAiRecommendation(${review.id})">
-                            <i class="fas fa-robot me-1"></i>AI Recommendation
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              `
-                  )
-                  .join("");
-              }, 500);
-            } else {
-              reviewList.innerHTML = `
-              <div class="col-12">
-                <div class="empty-state animate-fade-in">
-                  <i class="fas fa-comment-slash"></i>
-                  <h4 class="mt-3">No Reviews Yet</h4>
-                  <p class="text-muted">You haven't submitted any reviews. Share your dining experience!</p>
-                  <button class="btn btn-custom-primary mt-2" data-bs-toggle="modal" data-bs-target="#reviewModal">
-                    <i class="fas fa-pen me-2"></i>Write Your First Review
-                  </button>
-                </div>
-              </div>
-            `;
-            }
-          } catch (error) {
-            console.error("Error loading reviews:", error);
-            reviewList.innerHTML = `
-            <div class="col-12">
-              <div class="alert alert-danger p-4 text-center">
-                <i class="fas fa-exclamation-circle fa-2x mb-3"></i>
-                <h5>Oops! Something went wrong</h5>
-                <p>We couldn't load your reviews. Please try again later.</p>
-                <button class="btn btn-outline-danger" onclick="loadReviews()">
-                  <i class="fas fa-sync-alt me-2"></i>Try Again
-                </button>
-              </div>
-            </div>
-          `;
-          }
-        }
-
-        /**
-         * Load available orders for review selection
-         */
-        async function loadOrdersForReview() {
-          try {
-            const res = await fetch(
-              `http://localhost:3003/orders/user/${user.id}`
-            );
-            const orders = await res.json();
-
-            if (orders && orders.length > 0) {
-              orderSelect.innerHTML =
-                `<option value="">-- Select an Order --</option>` +
-                orders
-                  .map(
-                    (order) =>
-                      `<option value="${order.id}">Order #${order.id} - ${
-                        order.menu_name || "Menu ID " + order.menu_id
-                      }</option>`
-                  )
-                  .join("");
-            } else {
-              orderSelect.innerHTML = `<option value="">No orders available</option>`;
-            }
-          } catch (error) {
-            console.error("Error loading orders:", error);
-            orderSelect.innerHTML = `<option value="">Failed to load orders</option>`;
-          }
-        }
-
-        /**
-         * Handle review form submission
-         */
-        reviewForm.addEventListener("submit", async (e) => {
-          e.preventDefault();
-
-          const submitBtn = reviewForm.querySelector('button[type="submit"]');
-          const originalBtnText = submitBtn.innerHTML;
-          submitBtn.innerHTML =
-            '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
-          submitBtn.disabled = true;
-
-          const reviewId = document.getElementById("reviewId").value;
-          const orderId = parseInt(orderSelect.value);
-          const rating = parseInt(document.getElementById("rating").value);
-          const comment = document.getElementById("comment").value;
-
-          const method = reviewId ? "PUT" : "POST";
-          const url = reviewId
-            ? `http://localhost:3004/reviews/${reviewId}`
-            : `http://localhost:3004/reviews`;
-
-          try {
-            const res = await fetch(url, {
-              method,
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ orderId, rating, comment }),
+            // Update visual state
+            starBtns.forEach((starBtn, index) => {
+              if (index < rating) {
+                starBtn.classList.remove('btn-outline-warning');
+                starBtn.classList.add('btn-warning');
+              } else {
+                starBtn.classList.remove('btn-warning');
+                starBtn.classList.add('btn-outline-warning');
+              }
             });
-
-            if (res.ok) {
-              const toast = document.createElement("div");
-              toast.className = "position-fixed bottom-0 end-0 p-3";
-              toast.style.zIndex = "5";
-              toast.innerHTML = `
-              <div class="toast show bg-success text-white" role="alert">
-                <div class="toast-header bg-success text-white">
-                  <i class="fas fa-check-circle me-2"></i>
-                  <strong class="me-auto">Success</strong>
-                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-                </div>
-                <div class="toast-body">
-                  Review ${reviewId ? "updated" : "submitted"} successfully!
-                </div>
-              </div>
-            `;
-              document.body.appendChild(toast);
-
-              setTimeout(() => {
-                toast.querySelector(".toast").classList.remove("show");
-                setTimeout(() => toast.remove(), 300);
-              }, 3000);
-
-              reviewForm.reset();
-              document.getElementById("reviewId").value = "";
-              document.getElementById("reviewModalLabel").innerHTML =
-                '<i class="fas fa-star me-2"></i>Add Review';
-              reviewModal.hide();
-              loadReviews();
-            } else {
-              const errorData = await res.json();
-              alert(`Failed: ${errorData.message || "Unknown error"}`);
-            }
-          } catch (error) {
-            console.error("Error submitting review:", error);
-            alert("Network error while submitting review. Please try again.");
-          } finally {
-            submitBtn.innerHTML = originalBtnText;
-            submitBtn.disabled = false;
-          }
+          });
         });
+      }
 
-        /**
-         * Edit a review
-         */
-        window.editReview = function (id, orderId, rating, comment) {
-          document.getElementById("reviewId").value = id;
-          document.getElementById("orderSelect").value = orderId;
-          document.getElementById("rating").value = rating;
-          document.getElementById("comment").value = comment;
+      // FIXED: Helper function untuk format tanggal yang aman
+      function formatDate(dateValue) {
+        try {
+          if (!dateValue) return 'Unknown date';
+          
+          let date;
+          
+          // Handle different date formats
+          if (typeof dateValue === 'string') {
+            // Check if it's a timestamp string (all digits)
+            if (/^\d+$/.test(dateValue)) {
+              // Convert string timestamp to number
+              const timestamp = parseInt(dateValue);
+              // Check if it's in milliseconds (13 digits) or seconds (10 digits)
+              date = timestamp > 9999999999 ? new Date(timestamp) : new Date(timestamp * 1000);
+            } else {
+              // Regular ISO string
+              date = new Date(dateValue);
+            }
+          } else if (typeof dateValue === 'number') {
+            // Check if it's in milliseconds or seconds
+            date = dateValue > 9999999999 ? new Date(dateValue) : new Date(dateValue * 1000);
+          } else {
+            date = new Date(dateValue);
+          }
+          
+          // Check if date is valid
+          if (isNaN(date.getTime())) {
+            console.warn('Invalid date:', dateValue);
+            return 'Invalid date';
+          }
+          
+          // Format date in a readable way
+          return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        } catch (error) {
+          console.error('Error formatting date:', error, 'Input:', dateValue);
+          return 'Date error';
+        }
+      }
 
-          document.querySelector(`#star${rating}`).checked = true;
+      // FIXED: Load reviews with proper date formatting
+      async function loadReviews() {
+        document.getElementById('loadingSpinner').style.display = 'block';
+        document.getElementById('reviewsContainer').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'none';
 
-          document.getElementById("reviewModalLabel").innerHTML =
-            '<i class="fas fa-edit me-2"></i>Edit Review';
-          reviewModal.show();
-        };
+        try {
+          const reviewsData = await fetchGraphQL('http://localhost:4004/graphql', `
+            query {
+              reviews {
+                id
+                rating
+                comment
+                sentiment
+                created_at
+                user {
+                  id
+                  name
+                }
+                menu {
+                  id
+                  name
+                }
+                order {
+                  id
+                }
+              }
+            }
+          `);
 
-        /**
-         * Delete a review
-         */
-        window.deleteReview = async function (id) {
-          const confirmDialog = document.createElement("div");
-          confirmDialog.className = "modal fade";
-          confirmDialog.id = "confirmDeleteModal";
-          confirmDialog.innerHTML = `
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-              </div>
-              <div class="modal-body p-4 text-center">
-                <i class="fas fa-trash-alt fa-3x text-danger mb-3"></i>
-                <h5>Are you sure you want to delete this review?</h5>
-                <p class="text-muted">This action cannot be undone.</p>
-              </div>
-              <div class="modal-footer justify-content-center border-0">
-                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" id="confirmDeleteBtn" class="btn btn-danger px-4">Delete</button>
-              </div>
-            </div>
-          </div>
-        `;
-          document.body.appendChild(confirmDialog);
+          if (reviewsData?.reviews) {
+            const reviews = reviewsData.reviews;
+            
+            // Debug: Log raw data to see the format
+            console.log('Raw reviews data:', reviews);
+            
+            // Update stats
+            document.getElementById('totalReviews').textContent = reviews.length;
+            
+            const positiveCount = reviews.filter(r => r.sentiment === 'positive').length;
+            const neutralCount = reviews.filter(r => r.sentiment === 'neutral').length;
+            const negativeCount = reviews.filter(r => r.sentiment === 'negative').length;
+            
+            document.getElementById('positiveReviews').textContent = positiveCount;
+            document.getElementById('neutralReviews').textContent = neutralCount;
+            document.getElementById('negativeReviews').textContent = negativeCount;
 
-          const modal = new bootstrap.Modal(
-            document.getElementById("confirmDeleteModal")
-          );
-          modal.show();
+            if (reviews.length === 0) {
+              document.getElementById('emptyState').style.display = 'block';
+            } else {
+              const reviewsContainer = document.getElementById('reviewsContainer');
+              reviewsContainer.innerHTML = reviews.map(review => {
+                const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+                const sentimentClass = `sentiment-${review.sentiment || 'neutral'}`;
+                const sentimentIcon = review.sentiment === 'positive' ? 'thumbs-up' : 
+                                    review.sentiment === 'negative' ? 'thumbs-down' : 'meh';
 
-          document
-            .getElementById("confirmDeleteBtn")
-            .addEventListener("click", async function () {
-              modal.hide();
+                // Use the safe date formatting function
+                const formattedDate = formatDate(review.created_at);
+                
+                // Debug each review date
+                console.log(`Review ${review.id}: ${review.created_at} -> ${formattedDate}`);
 
-              try {
-                const res = await fetch(`http://localhost:3004/reviews/${id}`, {
-                  method: "DELETE",
-                  headers: { Authorization: `Bearer ${token}` },
-                });
+                // Safely escape comment for onclick attribute
+                const safeComment = (review.comment || '').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
 
-                if (res.ok) {
-                  const toast = document.createElement("div");
-                  toast.className = "position-fixed bottom-0 end-0 p-3";
-                  toast.style.zIndex = "5";
-                  toast.innerHTML = `
-                <div class="toast show bg-success text-white" role="alert">
-                  <div class="toast-header bg-success text-white">
-                    <i class="fas fa-check-circle me-2"></i>
-                    <strong class="me-auto">Success</strong>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                return `
+                  <div class="review-card p-3 m-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <div>
+                        <h6 class="mb-1">${review.menu?.name || 'Unknown Menu'}</h6>
+                        <small class="text-muted">by ${review.user?.name || 'Unknown User'} • Order #${review.order?.id || 'N/A'}</small>
+                      </div>
+                      <div class="text-end">
+                        <div class="rating-stars">${stars}</div>
+                        <small class="text-muted">${formattedDate}</small>
+                      </div>
+                    </div>
+                    
+                    <p class="mb-2">${review.comment || 'No comment provided'}</p>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                      <span class="badge bg-light text-dark ${sentimentClass}">
+                        <i class="fas fa-${sentimentIcon} me-1"></i>
+                        ${review.sentiment || 'neutral'}
+                      </span>
+                      
+                      <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" onclick="editReview('${review.id}', '${review.rating}', '${safeComment}')">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="deleteReview('${review.id}')">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div class="toast-body">
-                    Review deleted successfully!
+                `;
+              }).join('');
+              
+              document.getElementById('reviewsContainer').style.display = 'block';
+            }
+          }
+        } catch (error) {
+          console.error('Error loading reviews:', error);
+          document.getElementById('emptyState').style.display = 'block';
+          document.getElementById('emptyState').innerHTML = `
+            <i class="fas fa-exclamation-triangle text-danger fa-4x mb-3"></i>
+            <h4>Error Loading Reviews</h4>
+            <p class="text-muted">${error.message}</p>
+          `;
+        } finally {
+          document.getElementById('loadingSpinner').style.display = 'none';
+        }
+      }
+
+      // ALSO FIX: Load orders for review with proper date formatting
+      async function loadOrdersForReview() {
+        try {
+          const ordersData = await fetchGraphQL('http://localhost:4003/graphql', `
+            query GetUserOrders($userId: ID!) {
+              ordersByUser(userId: $userId) {
+                id
+                quantity
+                total_price
+                created_at
+                menu {
+                  id
+                  name
+                  price
+                }
+              }
+            }
+          `, { userId: user.id.toString() });
+
+          const ordersContainer = document.getElementById('ordersForReview');
+          
+          if (ordersData?.ordersByUser?.length > 0) {
+            ordersContainer.innerHTML = ordersData.ordersByUser.map(order => {
+              const formattedDate = formatDate(order.created_at);
+              
+              return `
+                <div class="order-select-card" data-order-id="${order.id}" data-menu-id="${order.menu.id}">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <h6 class="mb-1">${order.menu.name}</h6>
+                      <small class="text-muted">Order #${order.id} • ${order.quantity}x • Rp ${parseInt(order.total_price).toLocaleString()}</small>
+                    </div>
+                    <small class="text-muted">${formattedDate}</small>
                   </div>
                 </div>
               `;
-                  document.body.appendChild(toast);
+            }).join('');
 
-                  setTimeout(() => {
-                    toast.querySelector(".toast").classList.remove("show");
-                    setTimeout(() => toast.remove(), 300);
-                  }, 3000);
-
-                  loadReviews();
-                } else {
-                  const errorData = await res.json();
-                  alert(
-                    `Failed to delete review: ${
-                      errorData.message || "Unknown error"
-                    }`
-                  );
-                }
-              } catch (error) {
-                console.error("Error deleting review:", error);
-                alert("Network error while deleting review. Please try again.");
-              } finally {
-                setTimeout(() => {
-                  document.getElementById("confirmDeleteModal").remove();
-                }, 300);
-              }
+            // Add click handlers
+            document.querySelectorAll('.order-select-card').forEach(card => {
+              card.addEventListener('click', () => {
+                document.querySelectorAll('.order-select-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                document.getElementById('selectedOrderId').value = card.dataset.orderId;
+              });
             });
-        };
-
-        /**
-         * View AI recommendation for a review
-         */
-        window.viewAiRecommendation = function (id) {
-          window.location.href = `review-detail.html?id=${id}`;
-        };
-
-        window.displayReviews = function (reviews) {
-          const reviewsContainer = document.getElementById("reviewsContainer");
-          reviewsContainer.innerHTML = "";
-
-          if (reviews.length === 0) {
-            reviewsContainer.innerHTML = `
-            <div class="col-12">
+          } else {
+            ordersContainer.innerHTML = `
               <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>No reviews found.
+                <i class="fas fa-info-circle me-2"></i>
+                No orders available to review. Place an order first!
               </div>
+            `;
+          }
+        } catch (error) {
+          console.error('Error loading orders:', error);
+          document.getElementById('ordersForReview').innerHTML = `
+            <div class="alert alert-danger">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              Failed to load orders: ${error.message}
             </div>
           `;
-            return;
+        }
+      }
+
+      // Handle review form submission
+      reviewForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const reviewId = document.getElementById("reviewId").value;
+        const orderId = document.getElementById("selectedOrderId").value;
+        const rating = parseInt(document.getElementById("reviewRating").value);
+        const comment = document.getElementById("reviewComment").value;
+
+        const isEditing = !!reviewId;
+
+        if (!isEditing && !orderId) {
+          Swal.fire({
+            title: 'Error',
+            text: 'Please select an order to review',
+            icon: 'error',
+            confirmButtonColor: '#6366f1'
+          });
+          return;
+        }
+
+        if (!rating) {
+          Swal.fire({
+            title: 'Error', 
+            text: 'Please select a rating',
+            icon: 'error',
+            confirmButtonColor: '#6366f1'
+          });
+          return;
+        }
+
+        try {
+          if (isEditing) {
+            await fetchGraphQL('http://localhost:4004/graphql', `
+              mutation UpdateReview($id: ID!, $input: UpdateReviewInput!) {
+                updateReview(id: $id, input: $input) {
+                  message
+                  review {
+                    id
+                  }
+                }
+              }
+            `, { 
+              id: reviewId, 
+              input: { rating, comment } 
+            });
+          } else {
+            await fetchGraphQL('http://localhost:4004/graphql', `
+              mutation CreateReview($input: CreateReviewInput!) {
+                createReview(input: $input) {
+                  message
+                  review {
+                    id
+                  }
+                }
+              }
+            `, { 
+              input: { orderId, rating, comment } 
+            });
           }
 
-          reviews.forEach((review) => {
-            const stars =
-              "★".repeat(review.rating) + "☆".repeat(5 - review.rating);
-            const card = document.createElement("div");
-            card.className = "col-md-6 col-lg-4 mb-4";
-            card.innerHTML = `
-            <div class="card h-100">
-              <div class="card-header bg-light">
-                <div class="d-flex justify-content-between align-items-center">
-                  <span class="text-warning fw-bold">${stars}</span>
-                  <span class="badge bg-primary">${
-                    review.order_id ? `Order #${review.order_id}` : "N/A"
-                  }</span>
-                </div>
-              </div>
-              <div class="card-body">
-                <p class="card-text">${review.comment}</p>
-              </div>
-              <div class="card-footer bg-white border-top-0">
-                <div class="d-flex justify-content-between align-items-center">
-                  <small class="text-muted">${new Date(
-                    review.created_at
-                  ).toLocaleDateString()}</small>
-                  <div class="btn-group">
-                    <button class="btn btn-info btn-sm text-white" onclick="viewAiRecommendation(${
-                      review.id
-                    })">
-                      <i class="fas fa-robot me-1"></i>AI Recommendation
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="editReview(${
-                      review.id
-                    }, '${review.order_id || ""}', ${
-              review.rating
-            }, '${review.comment.replace(/'/g, "\\'")}')">
-                      <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-outline-danger btn-sm" onclick="deleteReview(${
-                      review.id
-                    })">
-                      <i class="fas fa-trash-alt"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
-            reviewsContainer.appendChild(card);
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: `Review ${isEditing ? 'updated' : 'created'} successfully!`,
+            showConfirmButton: false,
+            timer: 2000
           });
-        };
 
-        /**
-         * Logout function
-         */
-        window.logout = function () {
-          localStorage.clear();
-          window.location.href = "index.html";
-        };
-
-        loadOrdersForReview();
-        loadReviews();
+          reviewForm.reset();
+          reviewModal.hide();
+          loadReviews();
+        } catch (error) {
+          Swal.fire({
+            title: 'Error',
+            text: `Failed to ${isEditing ? 'update' : 'create'} review: ${error.message}`,
+            icon: 'error',
+            confirmButtonColor: '#6366f1'
+          });
+        }
       });
-    </script>
 
-    <!-- Load navbar from external file -->
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        // Memuat navbar dari file navbar.html
-        fetch('navbar.html')
-          .then(response => response.text())
-          .then(data => {
-            document.getElementById('navbarContainer').innerHTML = data;
-            
-            // Memastikan script navbar dijalankan
-            const scripts = document.getElementById('navbarContainer').querySelectorAll('script');
-            scripts.forEach(script => {
-              const newScript = document.createElement('script');
-              newScript.textContent = script.textContent;
-              document.body.appendChild(newScript);
-            });
-            
-            // Jalankan inisialisasi navbar
-            if (typeof initNavbar === 'function') {
-              initNavbar();
+      // Edit review function
+      window.editReview = (id, rating, comment) => {
+        document.getElementById("reviewId").value = id;
+        document.getElementById("reviewRating").value = rating;
+        document.getElementById("reviewComment").value = comment.replace(/&apos;/g, "'").replace(/&quot;/g, '"'); // Convert back from HTML entities
+
+        // Hide order selection when editing
+        document.getElementById("orderSelectionContainer").style.display = 'none';
+
+        // Update star buttons visual state
+        const starBtns = document.querySelectorAll('.star-btn');
+        starBtns.forEach(btn => {
+          const btnRating = parseInt(btn.dataset.rating);
+          if (btnRating <= rating) {
+            btn.classList.remove('btn-outline-warning');
+            btn.classList.add('btn-warning');
+          } else {
+            btn.classList.remove('btn-warning');
+            btn.classList.add('btn-outline-warning');
+          }
+        });
+
+        reviewModalTitle.innerHTML = '<i class="fas fa-star me-2"></i>Edit Review';
+        reviewModal.show();
+      };
+
+      // Delete review function
+      window.deleteReview = (id) => {
+        Swal.fire({
+          title: 'Confirm Delete',
+          text: "Are you sure you want to delete this review? This action cannot be undone.",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#ef4444',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: 'Yes, delete it!',
+          cancelButtonText: 'Cancel'
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            try {
+              await fetchGraphQL('http://localhost:4004/graphql', `
+                mutation DeleteReview($id: ID!) {
+                  deleteReview(id: $id) {
+                    message
+                  }
+                }
+              `, { id });
+
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Review deleted successfully!',
+                showConfirmButton: false,
+                timer: 2000
+              });
+
+              loadReviews();
+            } catch (error) {
+              Swal.fire({
+                title: 'Error',
+                text: `Failed to delete review: ${error.message}`,
+                icon: 'error',
+                confirmButtonColor: '#6366f1'
+              });
             }
-          })
-          .catch(error => console.error('Error loading navbar:', error));
-      });
-    </script>
-  </body>
+          }
+        });
+      };
+
+      // Logout function
+      window.logout = function () {
+        localStorage.clear();
+        window.location.href = "index.html";
+      };
+
+      initStarRating();
+      loadOrdersForReview();
+      loadReviews();
+    });
+  </script>
+
+  <!-- Load navbar from external file -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Memuat navbar dari file navbar.html
+      fetch('navbar.html')
+        .then(response => response.text())
+        .then(data => {
+          document.getElementById('navbarContainer').innerHTML = data;
+          
+          // Memastikan script navbar dijalankan
+          const scripts = document.getElementById('navbarContainer').querySelectorAll('script');
+          scripts.forEach(script => {
+            const newScript = document.createElement('script');
+            newScript.textContent = script.textContent;
+            document.body.appendChild(newScript);
+          });
+          
+          // Jalankan inisialisasi navbar
+          if (typeof initNavbar === 'function') {
+            initNavbar();
+          }
+        })
+        .catch(error => console.error('Error loading navbar:', error));
+    });
+  </script>
+</body>
 </html>

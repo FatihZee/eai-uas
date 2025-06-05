@@ -2,7 +2,11 @@
   "name": "eai-uts",
   "version": "1.0.0",
   "scripts": {
-    "dev": "concurrently \"cd user-service && npm run dev\" \"cd menu-service && npm run dev\" \"cd order-service && npm run dev\" \"cd review-service && npm run dev\""
+    "dev": "nodemon app.js",
+    "dev:graphql": "nodemon graphql-server.js",
+    "dev:both": "concurrently \"npm run dev\" \"npm run dev:graphql\"",
+    "start": "node app.js",
+    "start:graphql": "node graphql-server.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
