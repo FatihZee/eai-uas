@@ -10,7 +10,10 @@ router.get('/user/:userId', authMiddleware, paymentController.getPaymentsByUserI
 router.get('/order/:orderId', authMiddleware, paymentController.getPaymentsByOrderId);
 router.post('/', authMiddleware, paymentController.createPayment);
 
-// Webhook endpoint (biasanya tidak butuh auth, tapi butuh verifikasi signature)
+// Payment status check route - ADD THIS
+router.get('/:id/status', authMiddleware, paymentController.checkPaymentStatus);
+
+// Webhook endpoint (tidak butuh auth, tapi butuh verifikasi signature)
 router.post('/webhook/midtrans', paymentController.handleMidtransWebhook);
 
 module.exports = router;

@@ -9,58 +9,186 @@ const USER_SERVICE_GRAPHQL_URL = process.env.USER_SERVICE_GRAPHQL_URL || 'http:/
 const ORDER_SERVICE_GRAPHQL_URL = process.env.ORDER_SERVICE_GRAPHQL_URL || 'http://localhost:4003/graphql';
 
 class PaymentService {
-  static async getPaymentById(id) {
+  // GET ALL PAYMENTS (for admin)
+  static async getAllPayments(token) {
+    try {
+      const payments = await Payment.findAll({
+        order: [['transaction_time', 'DESC']]
+      });
+      
+      // Enrich with user and order details
+      const enrichedPayments = await Promise.all(
+        payments.map(async (payment) => {
+          const user = await this._fetchUserDetails(payment.user_id, token);
+          const order = await this._fetchOrderDetails(payment.order_id, token);
+          return {
+            ...payment.toJSON(),
+            user,
+            order
+          };
+        })
+      );
+      
+      return enrichedPayments;
+    } catch (error) {
+      throw new Error(`Failed to get all payments: ${error.message}`);
+    }
+  }
+
+  static async getPaymentById(id, token) {
     try {
       const payment = await Payment.findByPk(id);
       if (!payment) return null;
       
-      // Convert Sequelize instance to plain object
-      return payment.toJSON();
+      // Enrich with user and order details
+      const user = await this._fetchUserDetails(payment.user_id, token);
+      const order = await this._fetchOrderDetails(payment.order_id, token);
+      
+      return {
+        ...payment.toJSON(),
+        user,
+        order
+      };
     } catch (error) {
       throw new Error(`Failed to get payment ${id}: ${error.message}`);
     }
   }
 
-  static async getPaymentsByUserId(userId) {
+  static async getPaymentsByUserId(userId, token) {
     try {
-      const payments = await Payment.findAll({ where: { user_id: userId } });
-      return payments.map(payment => payment.toJSON());
+      const payments = await Payment.findAll({ 
+        where: { user_id: userId },
+        order: [['transaction_time', 'DESC']]
+      });
+      
+      // Enrich with user and order details
+      const enrichedPayments = await Promise.all(
+        payments.map(async (payment) => {
+          const user = await this._fetchUserDetails(payment.user_id, token);
+          const order = await this._fetchOrderDetails(payment.order_id, token);
+          return {
+            ...payment.toJSON(),
+            user,
+            order
+          };
+        })
+      );
+      
+      return enrichedPayments;
     } catch (error) {
       throw new Error(`Failed to get payments for user ${userId}: ${error.message}`);
     }
   }
 
-  static async getPaymentsByOrderId(orderId) {
+  static async getPaymentsByOrderId(orderId, token) {
     try {
-      const payments = await Payment.findAll({ where: { order_id: orderId } });
-      return payments.map(payment => payment.toJSON());
+      const payments = await Payment.findAll({ 
+        where: { order_id: orderId },
+        order: [['transaction_time', 'DESC']]
+      });
+      
+      // Enrich with user and order details
+      const enrichedPayments = await Promise.all(
+        payments.map(async (payment) => {
+          const user = await this._fetchUserDetails(payment.user_id, token);
+          const order = await this._fetchOrderDetails(payment.order_id, token);
+          return {
+            ...payment.toJSON(),
+            user,
+            order
+          };
+        })
+      );
+      
+      return enrichedPayments;
     } catch (error) {
       throw new Error(`Failed to get payments for order ${orderId}: ${error.message}`);
     }
   }
 
-  static async createPayment(userId, orderId, token) {
+  static async getPaymentsByStatus(status, token) {
     try {
-      // Fetch user dari REST API
-      const userRes = await axios.get(`${USER_SERVICE_URL}/users/${userId}`, {
-        headers: { Authorization: token }
+      const payments = await Payment.findAll({ 
+        where: { status },
+        order: [['transaction_time', 'DESC']]
       });
       
-      if (!userRes.data) {
+      // Enrich with user and order details
+      const enrichedPayments = await Promise.all(
+        payments.map(async (payment) => {
+          const user = await this._fetchUserDetails(payment.user_id, token);
+          const order = await this._fetchOrderDetails(payment.order_id, token);
+          return {
+            ...payment.toJSON(),
+            user,
+            order
+          };
+        })
+      );
+      
+      return enrichedPayments;
+    } catch (error) {
+      throw new Error(`Failed to get payments with status ${status}: ${error.message}`);
+    }
+  }
+
+  static async getPaymentStats() {
+    try {
+      const totalPayments = await Payment.count();
+      const totalAmount = await Payment.sum('amount') || 0;
+      const pendingCount = await Payment.count({ where: { status: 'pending' } });
+      const paidCount = await Payment.count({ where: { status: 'paid' } });
+      const failedCount = await Payment.count({ where: { status: 'failed' } });
+      const cancelledCount = await Payment.count({ where: { status: 'cancelled' } });
+      
+      return {
+        total_payments: totalPayments,
+        total_amount: totalAmount,
+        pending_count: pendingCount,
+        paid_count: paidCount,
+        failed_count: failedCount,
+        cancelled_count: cancelledCount
+      };
+    } catch (error) {
+      throw new Error(`Failed to get payment stats: ${error.message}`);
+    }
+  }
+
+  static async getPaymentStatsByUser(userId) {
+    try {
+      const totalPayments = await Payment.count({ where: { user_id: userId } });
+      const totalAmount = await Payment.sum('amount', { where: { user_id: userId } }) || 0;
+      const paidAmount = await Payment.sum('amount', { where: { user_id: userId, status: 'paid' } }) || 0;
+      const pendingAmount = await Payment.sum('amount', { where: { user_id: userId, status: 'pending' } }) || 0;
+      
+      return {
+        user_id: userId,
+        total_payments: totalPayments,
+        total_amount: totalAmount,
+        pending_amount: pendingAmount,
+        paid_amount: paidAmount
+      };
+    } catch (error) {
+      throw new Error(`Failed to get payment stats for user ${userId}: ${error.message}`);
+    }
+  }
+
+  // Fix CREATE PAYMENT method
+  static async createPayment(input, userId, token) {
+    try {
+      const { orderId } = input;
+      
+      // Fetch user dari GraphQL
+      const user = await this._fetchUserDetails(userId, token);
+      if (!user) {
         throw new Error('User not found');
       }
 
-      // Fetch order dari REST API  
-      const orderRes = await axios.get(`${ORDER_SERVICE_URL}/orders/${orderId}`, {
-        headers: { Authorization: token }
-      });
-      
-      if (!orderRes.data) {
+      // Fetch order dari GraphQL  
+      const order = await this._fetchOrderDetails(orderId, token);
+      if (!order) {
         throw new Error('Order not found');
       }
-
-      const order = orderRes.data;
-      const user = userRes.data;
 
       // Validasi order belongs to user
       if (order.user_id !== parseInt(userId)) {
@@ -124,7 +252,8 @@ class PaymentService {
         headers: { 
           'Content-Type': 'application/json', 
           ...(token && { 'Authorization': token }) 
-        } 
+        },
+        timeout: 5000 
       });
       
       if (response.data.errors) {
@@ -133,7 +262,7 @@ class PaymentService {
       return response.data.data.user;
     } catch (error) {
       console.error(`Error fetching user ${userId} from UserService:`, error.message);
-      return { id: userId, name: 'Unknown User (Fetch Error)' };
+      return { id: userId, name: 'Unknown User (Fetch Error)', email: 'unknown@example.com' };
     }
   }
 
@@ -148,7 +277,8 @@ class PaymentService {
         headers: { 
           'Content-Type': 'application/json', 
           ...(token && { 'Authorization': token }) 
-        } 
+        },
+        timeout: 5000 
       });
       
       if (response.data.errors) {
@@ -157,7 +287,58 @@ class PaymentService {
       return response.data.data.order;
     } catch (error) {
       console.error(`Error fetching order ${orderId} from OrderService:`, error.message);
-      return { id: orderId, description: 'Unknown Order (Fetch Error)' };
+      return { id: orderId, total_price: 0, user_id: null };
+    }
+  }
+
+  static async processPayment(paymentId, userId, token) {
+    try {
+      const payment = await Payment.findByPk(paymentId);
+      if (!payment) {
+        throw new Error('Payment not found');
+      }
+
+      // Update status to paid
+      await payment.update({ 
+        status: 'paid',
+        transaction_time: new Date()
+      });
+
+      // Return enriched payment
+      const user = await this._fetchUserDetails(payment.user_id, token);
+      const order = await this._fetchOrderDetails(payment.order_id, token);
+
+      return {
+        ...payment.toJSON(),
+        user,
+        order
+      };
+    } catch (error) {
+      throw new Error(`Failed to process payment: ${error.message}`);
+    }
+  }
+
+  static async cancelPayment(paymentId, userId, token) {
+    try {
+      const payment = await Payment.findByPk(paymentId);
+      if (!payment) {
+        throw new Error('Payment not found');
+      }
+
+      // Update status to cancelled
+      await payment.update({ status: 'cancelled' });
+
+      // Return enriched payment
+      const user = await this._fetchUserDetails(payment.user_id, token);
+      const order = await this._fetchOrderDetails(payment.order_id, token);
+
+      return {
+        ...payment.toJSON(),
+        user,
+        order
+      };
+    } catch (error) {
+      throw new Error(`Failed to cancel payment: ${error.message}`);
     }
   }
 }

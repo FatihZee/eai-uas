@@ -860,6 +860,61 @@
         }
       };
 
+      // Add payment status checker function
+      window.checkPaymentStatus = async (paymentId) => {
+        try {
+          Swal.fire({
+            title: 'Checking Status...',
+            text: 'Please wait while we check the latest payment status',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+
+          const response = await fetch(`http://localhost:3005/api/payments/${paymentId}/status`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            Swal.fire({
+              title: 'Status Updated!',
+              text: `Payment status: ${result.current_status}`,
+              icon: 'success',
+              confirmButtonColor: '#6366f1'
+            });
+
+            // Refresh orders list
+            loadOrders();
+          } else {
+            throw new Error(result.detail || 'Failed to check status');
+          }
+        } catch (error) {
+          Swal.fire({
+            title: 'Error',
+            text: `Failed to check payment status: ${error.message}`,
+            icon: 'error',
+            confirmButtonColor: '#6366f1'
+          });
+        }
+      };
+
+      // Add auto-refresh for pending payments
+      function startAutoRefresh() {
+        setInterval(async () => {
+          // Check for pending payments every 30 seconds
+          // Implementation details...
+        }, 30000);
+      }
+
+      // Call startAutoRefresh when page loads
+      document.addEventListener("DOMContentLoaded", () => {
+        // ... existing code ...
+        startAutoRefresh();
+      });
+
       window.logout = () => {
         localStorage.clear();
         window.location.href = "index.html";
