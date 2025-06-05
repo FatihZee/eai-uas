@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Orders | EAI Microservices</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    :root {
+      --primary-color: #6366f1;
+      --secondary-color: #4f46e5;
+      --accent-color: #818cf8;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --danger-color: #ef4444;
+      --dark-color: #1f2937;
+      --light-color: #f9fafb;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f3f4f6;
+      color: #374151;
+    }
+    
+    .navbar {
+      background-color: var(--dark-color);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    
+    .navbar-brand {
+      font-weight: 700;
+      color: white;
+    }
+    
+    .card {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      overflow: hidden;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .card-header {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      color: white;
+      font-weight: 600;
+      padding: 1rem;
+      border: none;
+    }
+    
+    .card-body {
+      padding: 1.5rem;
+    }
+    
+    .btn-custom-primary {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      border: none;
+      color: white;
+      font-weight: 500;
+      padding: 0.6rem 1.5rem;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
+    }
+    
+    .btn-custom-primary:hover {
+      background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+    }
+    
+    .btn-sm {
+      border-radius: 6px;
+      padding: 0.4rem 0.8rem;
+    }
+    
+    .btn-outline-custom {
+      border: 2px solid var(--primary-color);
+      color: var(--primary-color);
+      font-weight: 500;
+      background: transparent;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-outline-custom:hover {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .btn-warning {
+      background-color: var(--warning-color);
+      border: none;
+      color: white;
+    }
+    
+    .btn-danger {
+      background-color: var(--danger-color);
+      border: none;
+      color: white;
+    }
+    
+    .btn-info {
+      background-color: var(--accent-color);
+      border: none;
+      color: white;
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.6s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .page-header {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      color: white;
+      padding: 2rem 0;
+      margin-bottom: 2rem;
+      border-radius: 0 0 20px 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .page-title {
+      font-weight: 700;
+      margin: 0;
+    }
+    
+    #loadingSpinner {
+      display: flex;
+      justify-content: center;
+      padding: 3rem 0;
+    }
+    
+    .spinner-border {
+      color: var(--primary-color);
+      width: 3rem;
+      height: 3rem;
+    }
+    
+    .order-price {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--primary-color);
+    }
+    
+    .order-tag {
+      display: inline-block;
+      padding: 0.25rem 0.7rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+      background-color: rgba(99, 102, 241, 0.1);
+      color: var(--primary-color);
+    }
+    
+    .modal-content {
+      border: none;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    
+    .modal-header {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      color: white;
+      border: none;
+    }
+    
+    .modal-title {
+      font-weight: 600;
+    }
+    
+    .form-control, .form-select {
+      border-radius: 8px;
+      padding: 0.7rem 1rem;
+      border: 1px solid #e5e7eb;
+      transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+    
+    .btn-action {
+      width: 36px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem 0;
+    }
+    
+    .empty-state i {
+      font-size: 4rem;
+      color: #d1d5db;
+      margin-bottom: 1rem;
+    }
+    
+    /* Animation for new order button */
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    
+    .pulse-animation {
+      animation: pulse 2s infinite;
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: var(--accent-color);
+      border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--primary-color);
+    }
+  </style>
+</head>
+<body>
+  <div id="navbarContainer"></div>
+
+  <div class="page-header">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="page-title">
+            <i class="fas fa-shopping-cart me-2"></i>Your Orders
+          </h3>
+          <p class="mb-0 text-white-50">Manage your food orders</p>
+        </div>
+        <button class="btn btn-custom-primary text-white pulse-animation" data-bs-toggle="modal" data-bs-target="#orderModal">
+          <i class="fas fa-plus me-2"></i>New Order
+        </button>        
+      </div>
+    </div>
+  </div>
+
+  <div class="container my-4">
+    <!-- Loading spinner -->
+    <div id="loadingSpinner">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
+    <div id="orderList" class="row g-4" style="display: none;"></div>
+    
+    <!-- Empty state will be shown if no orders -->
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <i class="fas fa-shopping-basket"></i>
+      <h4>No Orders Found</h4>
+      <p class="text-muted">You don't have any orders yet. Place your first order now!</p>
+      <button class="btn btn-custom-primary mt-3" data-bs-toggle="modal" data-bs-target="#orderModal">
+        <i class="fas fa-plus me-2"></i>Create Order
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal: Create/Edit Order -->
+  <div class="modal fade" id="orderModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" id="orderForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="orderModalTitle">
+            <i class="fas fa-utensils me-2"></i>Create Order
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="orderId">
+          <div class="mb-4">
+            <label class="form-label fw-bold">Select Menu</label>
+            <select id="menuSelect" class="form-select" required></select>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-bold">Quantity</label>
+            <div class="input-group">
+              <button type="button" class="btn btn-outline-secondary" id="decreaseBtn">
+                <i class="fas fa-minus"></i>
+              </button>
+              <input type="number" id="quantity" class="form-control text-center" value="1" min="1" required>
+              <button type="button" class="btn btn-outline-secondary" id="increaseBtn">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+          </div>
+          <div class="alert alert-primary d-flex align-items-center" role="alert">
+            <i class="fas fa-info-circle me-2"></i>
+            <div>
+              Customize your order and we'll prepare it fresh for you!
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-custom" type="button" data-bs-dismiss="modal">
+            <i class="fas fa-times me-1"></i>Cancel
+          </button>
+          <button class="btn btn-custom-primary" type="submit">
+            <i class="fas fa-save me-1"></i>Save Order
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!token || !user) { // Pastikan user juga ada
+        window.location.href = "index.html";
+        return;
+      }
+
+      const orderList = document.getElementById("orderList");
+      const loadingSpinner = document.getElementById("loadingSpinner");
+      const emptyState = document.getElementById("emptyState");
+      const orderForm = document.getElementById("orderForm");
+      const menuSelect = document.getElementById("menuSelect");
+      const orderModalEl = document.getElementById("orderModal");
+      const orderModal = new bootstrap.Modal(orderModalEl);
+      const orderModalTitle = document.getElementById("orderModalTitle");
+      const orderIdInput = document.getElementById("orderId");
+      const quantityInput = document.getElementById("quantity");
+      const decreaseBtn = document.getElementById("decreaseBtn");
+      const increaseBtn = document.getElementById("increaseBtn");
+
+      let menuData = []; // Tetap digunakan untuk mengisi dropdown menu
+
+      // Quantity controls (tetap sama)
+      decreaseBtn.addEventListener("click", () => {
+        const currentValue = parseInt(quantityInput.value);
+        if (currentValue > 1) {
+          quantityInput.value = currentValue - 1;
+        }
+      });
+
+      increaseBtn.addEventListener("click", () => {
+        const currentValue = parseInt(quantityInput.value);
+        quantityInput.value = currentValue + 1;
+      });
+
+      // Fungsi untuk mengambil data menu (tetap menggunakan REST jika menu-service belum GraphQL)
+      async function loadMenus() {
+        try {
+          const res = await fetch("http://localhost:3002/menus", {
+            headers: {
+              Authorization: "Bearer " + token, // Tambahkan token jika menu-service membutuhkannya
+            },
+          });
+          if (!res.ok) throw new Error(`Failed to load menus: ${res.statusText}`);
+          menuData = await res.json();
+          menuSelect.innerHTML = menuData
+            .map(
+              (menu) =>
+                `<option value="${menu.id}">${menu.name} - Rp ${parseInt(
+                  menu.price
+                ).toLocaleString()}</option>`
+            )
+            .join("");
+        } catch (error) {
+          console.error("Error loading menus:", error);
+          menuSelect.innerHTML =
+            '<option value="">Failed to load menus</option>';
+          Swal.fire({
+            title: 'Error',
+            text: `Could not load menu options: ${error.message}. Some functionalities might be affected.`,
+            icon: 'error',
+            confirmButtonColor: '#6366f1'
+          });
+        }
+      }
+
+      // Helper function untuk request GraphQL
+      async function fetchGraphQL(query, variables = {}) {
+        const graphqlUrl = "http://localhost:4003/graphql"; // URL GraphQL Order Service
+        const res = await fetch(graphqlUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token,
+          },
+          body: JSON.stringify({
+            query,
+            variables,
+          }),
+        });
+
+        const jsonResponse = await res.json();
+
+        if (!res.ok || jsonResponse.errors) {
+          const errorMessage = jsonResponse.errors
+            ? jsonResponse.errors.map((err) => err.message).join(", ")
+            : `Request failed with status ${res.status}`;
+          console.error("GraphQL Error:", errorMessage, jsonResponse.errors);
+          throw new Error(errorMessage);
+        }
+        return jsonResponse.data;
+      }
+
+      // Fungsi untuk memuat daftar pesanan menggunakan GraphQL
+      async function loadOrders() {
+        loadingSpinner.style.display = "flex";
+        orderList.style.display = "none";
+        emptyState.style.display = "none";
+
+        try {
+          await new Promise(resolve => setTimeout(resolve, 800)); // Simulasi delay
+
+          const query = `
+            query GetUserOrders($userId: ID!) {
+              ordersByUser(userId: $userId) {
+                id
+                menu_id
+                quantity
+                total_price
+                created_at
+                menu {
+                  id
+                  name
+                  price
+                }
+              }
+            }
+          `;
+          
+          // Pastikan user.id dikirim sebagai string jika schema GraphQL mengharapkan ID!
+          const data = await fetchGraphQL(query, { userId: user.id.toString() });
+          const orders = data.ordersByUser;
+
+          if (!orders || orders.length === 0) {
+            emptyState.style.display = "block";
+          } else {
+            orderList.innerHTML = orders
+              .map((order, index) => {
+                const menuName = order.menu ? order.menu.name : `Menu ID: ${order.menu_id}`;
+                const delay = index * 100;
+
+                return `
+                <div class="col-md-4 fade-in" style="animation-delay: ${delay}ms">
+                  <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                      <span class="text-white">Order #${order.id}</span>
+                      <span class="order-tag">
+                        <i class="fas fa-clock me-1"></i> ${new Date(
+                          order.created_at
+                        ).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div class="card-body">
+                      <h5 class="mb-3">${menuName}</h5>
+                      <div class="d-flex justify-content-between mb-3">
+                        <span><i class="fas fa-cubes me-2"></i>Quantity</span>
+                        <span class="fw-bold">${order.quantity}</span>
+                      </div>
+                      <div class="d-flex justify-content-between mb-4">
+                        <span><i class="fas fa-tag me-2"></i>Total</span>
+                        <span class="order-price">Rp ${parseInt(
+                          order.total_price
+                        ).toLocaleString()}</span>
+                      </div>
+                      <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-warning btn-action edit-btn" onclick="editOrder('${order.id}', '${order.menu_id}', ${order.quantity})" title="Edit Order">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-action" onclick="deleteOrder('${order.id}')" title="Delete Order">
+                          <i class="fas fa-trash-alt"></i>
+                        </button>
+                        <a href="order-detail.html?id=${order.id}" class="btn btn-info btn-action" title="View Details">
+                          <i class="fas fa-info-circle"></i>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+              })
+              .join("");
+            orderList.style.display = "flex";
+          }
+        } catch (error) {
+          console.error("Error loading orders via GraphQL:", error);
+          emptyState.style.display = "block";
+          emptyState.innerHTML = `
+            <i class="fas fa-exclamation-triangle text-danger"></i>
+            <h4>Error Loading Orders</h4>
+            <p class="text-muted">${error.message}. Please try again later.</p>
+          `;
+        } finally {
+          loadingSpinner.style.display = "none";
+        }
+      }
+      
+      // Reset modal when opening for new order
+      orderModalEl.addEventListener('show.bs.modal', function (event) {
+        // Check if the modal was triggered by an edit button
+        const button = event.relatedTarget;
+        const isEditMode = button && button.classList.contains('edit-btn');
+
+        if (!isEditMode) {
+          orderModalTitle.innerHTML = '<i class="fas fa-utensils me-2"></i>Create Order';
+          orderForm.reset();
+          orderIdInput.value = '';
+          quantityInput.value = 1; // Default quantity
+        }
+      });
+
+      // Handle form submission untuk Create/Update Order menggunakan GraphQL
+      orderForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const orderIdValue = orderIdInput.value; // Ini akan string
+        const menuIdValue = menuSelect.value;   // Ini akan string dari select value
+        const quantityValue = parseInt(quantityInput.value);
+
+        const isEditing = !!orderIdValue;
+        
+        let mutation;
+        let variables;
+
+        if (isEditing) {
+          mutation = `
+            mutation UpdateOrder($id: ID!, $menuId: ID!, $quantity: Int!) {
+              updateOrder(id: $id, menuId: $menuId, quantity: $quantity) {
+                message
+                order {
+                  id # Bisa tambahkan field lain jika perlu
+                }
+              }
+            }
+          `;
+          variables = { id: orderIdValue, menuId: menuIdValue, quantity: quantityValue };
+        } else {
+          mutation = `
+            mutation CreateOrder($menuId: ID!, $quantity: Int!) {
+              createOrder(menuId: $menuId, quantity: $quantity) {
+                message
+                order {
+                  id
+                }
+              }
+            }
+          `;
+          variables = { menuId: menuIdValue, quantity: quantityValue };
+        }
+        
+        const confirmAction = await Swal.fire({
+          title: isEditing ? 'Update this order?' : 'Create new order?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#6366f1',
+          cancelButtonColor: '#9ca3af',
+          confirmButtonText: 'Yes, proceed',
+          cancelButtonText: 'Cancel',
+        });
+
+        if (!confirmAction.isConfirmed) return;
+
+        Swal.fire({
+          title: 'Processing...',
+          text: 'Please wait while we process your order',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading(); }
+        });
+
+        try {
+          const data = await fetchGraphQL(mutation, variables);
+          const responseMessage = isEditing 
+            ? (data.updateOrder?.message || 'Order updated successfully!') 
+            : (data.createOrder?.message || 'Order created successfully!');
+
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: responseMessage,
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true,
+          });
+          orderForm.reset();
+          orderIdInput.value = ''; // Pastikan orderId direset
+          orderModal.hide();
+          loadOrders();
+        } catch (error) {
+          Swal.fire({
+            title: 'Error',
+            text: `Could not process your order: ${error.message}. Please try again.`,
+            icon: 'error',
+            confirmButtonColor: '#6366f1'
+          });
+        }
+      });
+
+      // Fungsi untuk mengisi modal edit (tetap sama, hanya mempopulasi form)
+      window.editOrder = (id, menuId, quantity) => {
+        orderModalTitle.innerHTML = '<i class="fas fa-edit me-2"></i>Edit Order';
+        orderIdInput.value = id.toString(); // Pastikan ID adalah string
+        menuSelect.value = menuId.toString(); // Pastikan menuId adalah string
+        quantityInput.value = quantity;
+        orderModal.show();
+      };
+
+      // Fungsi untuk menghapus order menggunakan GraphQL
+      window.deleteOrder = async (id) => {
+        const confirmDelete = await Swal.fire({
+          title: 'Delete this order?',
+          text: 'This action cannot be undone',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#ef4444',
+          cancelButtonColor: '#9ca3af',
+          confirmButtonText: 'Yes, delete it',
+        });
+
+        if (!confirmDelete.isConfirmed) return;
+
+        Swal.fire({
+          title: 'Deleting...',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading(); }
+        });
+        
+        const mutation = `
+          mutation DeleteOrder($id: ID!) {
+            deleteOrder(id: $id) {
+              message
+              id
+            }
+          }
+        `;
+
+        try {
+          // Pastikan ID dikirim sebagai string jika schema GraphQL mengharapkan ID!
+          const data = await fetchGraphQL(mutation, { id: id.toString() });
+
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: data.deleteOrder?.message || 'Order deleted successfully!',
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true,
+          });
+          loadOrders();
+        } catch (error) {
+          Swal.fire({
+            title: 'Error',
+            text: `Could not delete the order: ${error.message}. Please try again.`,
+            icon: 'error',
+            confirmButtonColor: '#6366f1'
+          });
+        }
+      };
+
+      window.logout = () => {
+        localStorage.clear();
+        window.location.href = "index.html";
+      };
+
+      // Inisialisasi: muat menu dulu, baru muat order
+      loadMenus().then(() => {
+        loadOrders();
+      }).catch(err => {
+        // Jika loadMenus gagal, tetap coba loadOrders, mungkin orders bisa ditampilkan tanpa nama menu detail
+        console.warn("Proceeding to load orders even if menus failed to load:", err);
+        loadOrders();
+      });
+    });
+  </script>
+
+  <script>
+    // Script untuk memuat navbar (tetap sama)
+    document.addEventListener('DOMContentLoaded', function() {
+      fetch('navbar.html')
+        .then(response => response.text())
+        .then(data => {
+          document.getElementById('navbarContainer').innerHTML = data;
+          const scripts = document.getElementById('navbarContainer').querySelectorAll('script');
+          scripts.forEach(script => {
+            const newScript = document.createElement('script');
+            newScript.textContent = script.textContent;
+            document.body.appendChild(newScript);
+          });
+          if (typeof initNavbar === 'function') {
+            initNavbar();
+          }
+        })
+        .catch(error => console.error('Error loading navbar:', error));
+    });
+  </script>
+</body>
+</html>

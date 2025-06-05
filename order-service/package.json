@@ -1,0 +1,35 @@
+{
+  "name": "order-service",
+  "version": "1.0.0",
+  "description": "Order Service with REST and GraphQL support",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "start:rest": "node app.js",
+    "dev:rest": "nodemon app.js",
+    "start:graphql": "node server.js",
+    "dev:graphql": "nodemon server.js",
+    "dev:both": "concurrently \"npm run dev:rest\" \"npm run dev:graphql\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "apollo-server-express": "^3.12.0",
+    "axios": "^1.5.0",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "graphql": "^16.6.0",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.6.0"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0",
+    "nodemon": "^3.0.1"
+  }
+}

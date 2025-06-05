@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Review AI Recommendation</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #7209b7;
+      --accent-color: #4cc9f0;
+      --dark-color: #2b2d42;
+      --light-color: #f8f9fa;
+      --success-color: #06d6a0;
+      --warning-color: #ffd166;
+      --danger-color: #ef476f;
+    }
+    
+    body {
+      background-color: #f0f2f5;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      position: relative;
+      overflow-x: hidden;
+    }
+    
+    .page-header {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      color: white;
+      padding: 2rem 0;
+      margin-bottom: 2rem;
+      border-radius: 0 0 30px 30px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .page-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('/api/placeholder/1200/300') center/cover;
+      opacity: 0.1;
+      z-index: 0;
+    }
+    
+    .page-header .container {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .breadcrumb-item a {
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    
+    .breadcrumb-item a:hover {
+      color: white;
+      text-decoration: underline;
+    }
+    
+    .breadcrumb-item.active {
+      color: white;
+      font-weight: 600;
+    }
+    
+    .ai-recommendation {
+      border-left: 4px solid var(--accent-color);
+      padding-left: 20px;
+      position: relative;
+    }
+    
+    .recommendation-header {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 5px 5px 0 0;
+      border-bottom: 1px solid #dee2e6;
+    }
+    
+    .recommendation-body {
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 0 0 5px 5px;
+    }
+    
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-top: 20px;
+      color: var(--dark-color);
+      position: relative;
+      padding-left: 15px;
+    }
+    
+    .section-title::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 8px;
+      height: 20px;
+      background-color: var(--accent-color);
+      border-radius: 4px;
+    }
+    
+    .card {
+      border: none;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+      border-radius: 15px;
+      overflow: hidden;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
+    }
+    
+    .card-header {
+      border-bottom: none;
+      padding: 1.25rem;
+      border-radius: 15px 15px 0 0 !important;
+      background: linear-gradient(135deg, var(--primary-color), var(--accent-color)) !important;
+    }
+    
+    .btn-light {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-light:hover {
+      background: white;
+      color: var(--primary-color);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .ai-badge {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+      color: white;
+      border-radius: 50px;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      box-shadow: 0 5px 15px rgba(76, 201, 240, 0.3);
+    }
+    
+    .recommendation-container {
+      position: relative;
+      background-color: white;
+      border-radius: 15px;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    }
+    
+    .recommendation-container::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: 20px;
+      width: 20px;
+      height: 20px;
+      background-color: white;
+      transform: rotate(45deg);
+      z-index: 0;
+    }
+    
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      opacity: 0.3;
+    }
+    
+    #navbarContainer {
+      position: relative;
+      z-index: 10;
+    }
+    
+    .page-header, .container {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .ai-avatar {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border: 2px solid var(--accent-color);
+      box-shadow: 0 0 10px rgba(76, 201, 240, 0.3);
+    }
+
+    .wave {
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 100%;
+      height: 50px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23f0f2f5' fill-opacity='1' d='M0,288L48,272C96,256,192,224,288,213.3C384,203,480,213,576,229.3C672,245,768,267,864,261.3C960,256,1056,224,1152,213.3C1248,203,1344,213,1392,218.7L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+      background-size: cover;
+    }
+    
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+    
+    .floating {
+      animation: floating 3s ease-in-out infinite;
+    }
+    
+    @keyframes floating {
+      0% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+      100% {
+        transform: translateY(0px);
+      }
+    }
+    
+    .tag {
+      display: inline-block;
+      padding: 0.3rem 0.8rem;
+      background-color: rgba(67, 97, 238, 0.1);
+      color: var(--primary-color);
+      border-radius: 50px;
+      font-size: 0.85rem;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+      transition: all 0.3s ease;
+    }
+    
+    .tag:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .info-card {
+      padding: 1.5rem;
+      background-color: rgba(76, 201, 240, 0.05);
+      border-radius: 15px;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid var(--accent-color);
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: var(--accent-color);
+      border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--primary-color);
+    }
+    
+    /* Progress bar animation */
+    .progress-bar {
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      animation: progress-animation 2s;
+    }
+    
+    @keyframes progress-animation {
+      0% {
+        width: 0%;
+      }
+    }
+    
+    /* Loading animation */
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+    }
+    
+    .loading {
+      display: inline-block;
+      position: relative;
+      width: 80px;
+      height: 80px;
+    }
+    
+    .loading div {
+      position: absolute;
+      top: 33px;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      animation-timing-function: cubic-bezier(0, 1, 1, 0);
+    }
+    
+    .loading div:nth-child(1) {
+      left: 8px;
+      animation: loading1 0.6s infinite;
+    }
+    
+    .loading div:nth-child(2) {
+      left: 8px;
+      animation: loading2 0.6s infinite;
+    }
+    
+    .loading div:nth-child(3) {
+      left: 32px;
+      animation: loading2 0.6s infinite;
+    }
+    
+    .loading div:nth-child(4) {
+      left: 56px;
+      animation: loading3 0.6s infinite;
+    }
+    
+    @keyframes loading1 {
+      0% {
+        transform: scale(0);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+    
+    @keyframes loading3 {
+      0% {
+        transform: scale(1);
+      }
+      100% {
+        transform: scale(0);
+      }
+    }
+    
+    @keyframes loading2 {
+      0% {
+        transform: translate(0, 0);
+      }
+      100% {
+        transform: translate(24px, 0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <div id="navbarContainer"></div>
+  
+  <!-- Three.js Background -->
+  <div id="canvas-container"></div>
+
+  <!-- Header -->
+  <header class="page-header">
+    <div class="container py-5">
+      <div class="row mb-4">
+        <div class="col-12">
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="reviews.html"><i class="fas fa-star me-1"></i>Reviews</a></li>
+              <li class="breadcrumb-item active" aria-current="page"><i class="fas fa-robot me-1"></i>AI Recommendation</li>
+            </ol>
+          </nav>
+          <h1 class="display-5 fw-bold mb-4 animate__animated animate__fadeInDown">AI Review Recommendation</h1>
+          <p class="lead animate__animated animate__fadeInUp">Advanced AI-powered insights to help you make informed decisions</p>
+        </div>
+      </div>
+    </div>
+    <div class="wave"></div>
+  </header>
+
+  <!-- Content -->
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 mx-auto">
+        <div class="card mb-4 animate__animated animate__fadeIn">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 d-flex align-items-center">
+              <span class="pulse me-3">
+                <i class="fas fa-brain fa-lg text-light"></i>
+              </span>
+              <span>AI Generated Recommendation</span>
+            </h5>
+            <a href="reviews.html" class="btn btn-light btn-sm">
+              <i class="fas fa-arrow-left me-1"></i>Back to Reviews
+            </a>
+          </div>
+          <div class="card-body">
+            <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
+              <div class="floating me-3">
+                <img src="ai.png" class="rounded-circle ai-avatar" alt="AI Avatar">
+              </div>
+              <div>
+                <span class="ai-badge">
+                  <i class="fas fa-robot me-2"></i>AI Assistant
+                </span>
+                <div class="d-flex">
+                  <div class="me-4">
+                    <small class="text-muted">Review ID:</small>
+                    <p class="mb-0 fw-bold" id="reviewId">Loading...</p>
+                  </div>
+                  <div>
+                    <small class="text-muted">Generated:</small>
+                    <p class="mb-0 fw-bold" id="createdAt">Loading...</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="tags-container mb-4">
+              <span class="tag"><i class="fas fa-chart-line me-1"></i>Analytics</span>
+              <span class="tag"><i class="fas fa-lightbulb me-1"></i>Insights</span>
+              <span class="tag"><i class="fas fa-bullseye me-1"></i>Recommendations</span>
+            </div>
+            
+            <div class="info-card">
+              <div class="d-flex align-items-center">
+                <i class="fas fa-info-circle fa-lg text-primary me-3"></i>
+                <p class="mb-0">This recommendation is generated using our advanced AI algorithm that analyzes patterns across thousands of similar reviews.</p>
+              </div>
+            </div>
+            
+            <div class="recommendation-container mb-4">
+              <div id="loading" class="loading-container">
+                <div class="loading">
+                  <div></div>
+                  <div></div>
+                  <div></div>
+                  <div></div>
+                </div>
+              </div>
+              <div id="recommendationContent" class="ai-recommendation" style="display: none;"></div>
+            </div>
+            
+            <div class="confidence-score mt-4">
+              <h6 class="text-muted mb-2">AI Confidence Score</h6>
+              <div class="progress" style="height: 10px;">
+                <div class="progress-bar" role="progressbar" style="width: 85%;" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <div class="d-flex justify-content-between mt-1">
+                <small>Lower confidence</small>
+                <small class="fw-bold">85%</small>
+                <small>Higher confidence</small>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <button class="btn btn-sm btn-outline-primary me-2">
+                  <i class="far fa-thumbs-up me-1"></i>Helpful
+                </button>
+                <button class="btn btn-sm btn-outline-secondary">
+                  <i class="far fa-thumbs-down me-1"></i>Not helpful
+                </button>
+              </div>
+              <button class="btn btn-sm btn-primary">
+                <i class="fas fa-download me-1"></i>Export as PDF
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="text-center animate__animated animate__fadeInUp animate__delay-1s">
+          <button class="btn btn-outline-primary rounded-pill px-4 py-2 mb-5">
+            <i class="fas fa-sync-alt me-2"></i>Generate New Recommendation
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const initThreeBackground = () => {
+      const container = document.getElementById('canvas-container');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+      camera.position.z = 30;
+      
+      const renderer = new THREE.WebGLRenderer({ alpha: true });
+      renderer.setSize(width, height);
+      container.appendChild(renderer.domElement);
+      
+      const particlesGeometry = new THREE.BufferGeometry();
+      const particlesCount = 1000;
+      
+      const posArray = new Float32Array(particlesCount * 3);
+      for(let i = 0; i < particlesCount * 3; i++) {
+        posArray[i] = (Math.random() - 0.5) * 50;
+      }
+      
+      particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+      
+      const particlesMaterial = new THREE.PointsMaterial({
+        size: 0.1,
+        color: '#4361ee',
+        transparent: true
+      });
+      
+      const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+      scene.add(particlesMesh);
+      
+      const animate = () => {
+        requestAnimationFrame(animate);
+        particlesMesh.rotation.x += 0.0005;
+        particlesMesh.rotation.y += 0.0005;
+        renderer.render(scene, camera);
+      };
+      
+      animate();
+      
+      window.addEventListener('resize', () => {
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        renderer.setSize(width, height);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+      });
+    };
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      try {
+        initThreeBackground();
+      } catch (error) {
+        console.error("Error initializing Three.js background:", error);
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const reviewId = urlParams.get("id");
+
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          window.location.href = "index.html";
+          return;
+        }
+
+        setTimeout(async () => {
+          try {
+            const res = await fetch(`http://localhost:3004/reviews/ai-recommendation/${reviewId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (!res.ok) throw new Error("Failed to fetch recommendation");
+
+            const data = await res.json();
+
+            document.getElementById("reviewId").textContent = data.review_id;
+            document.getElementById("createdAt").textContent = new Date(data.created_at).toLocaleString();
+
+            const markdownToHtml = (markdown) => {
+              let html = markdown
+                .replace(/\*\*(.*?)\*\*/g, "<strong class='text-primary'>$1</strong>")
+                .replace(/\*(.*?)\*/g, "<em>$1</em>")
+                .replace(/^### (.*?)$/gm, "<h5 class='mt-4 mb-3 fw-bold text-primary'>$1</h5>")
+                .replace(/^## (.*?)$/gm, "<h4 class='mt-4 mb-3 fw-bold text-primary'>$1</h4>")
+                .replace(/^# (.*?)$/gm, "<h3 class='mt-4 mb-3 fw-bold text-primary'>$1</h3>")
+                .replace(/^(\d+)\. (.*?)$/gm, "<li class='mb-2'>$2</li>")
+                .replace(/^- (.*?)$/gm, "<li class='mb-2'>$1</li>")
+                .replace(/^\s*---\s*$/gm, "<hr class='my-4'>")
+                .replace(/\n\n/g, "</p><p class='mb-3'>")
+                .replace(/\n/g, "<br>");
+
+              const listRegex = /<li class='mb-2'>(.*?)<\/li>/g;
+              const matches = html.match(listRegex);
+              
+              if (matches) {
+                const listItems = matches.join('');
+                html = html.replace(listRegex, '');
+                html = html.replace(/(<\/p>|<p class='mb-3'>)/, `$1<ul class='list-styled my-3'>${listItems}</ul>`);
+              }
+
+              return `<p class='mb-3'>${html}</p>`;
+            };
+
+            document.getElementById("loading").style.display = "none";
+            const recommendationElement = document.getElementById("recommendationContent");
+            recommendationElement.style.display = "block";
+            
+            const formattedHtml = markdownToHtml(data.recommendation);
+            recommendationElement.innerHTML = formattedHtml;
+            recommendationElement.classList.add("animate__animated", "animate__fadeIn");
+
+          } catch (error) {
+            console.error("Error fetching recommendation:", error);
+            document.getElementById("loading").style.display = "none";
+            document.getElementById("recommendationContent").style.display = "block";
+            document.getElementById("recommendationContent").innerHTML = `
+              <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Failed to load AI recommendation. Please try again later.
+              </div>
+            `;
+          }
+        }, 1500);
+
+      } catch (error) {
+        console.error("Error in main process:", error);
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("recommendationContent").style.display = "block";
+        document.getElementById("recommendationContent").innerHTML = `
+          <div class="alert alert-danger">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            An unexpected error occurred. Please refresh the page and try again.
+          </div>
+        `;
+      }
+    });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Memuat navbar dari file navbar.html
+      fetch('navbar.html')
+        .then(response => response.text())
+        .then(data => {
+          document.getElementById('navbarContainer').innerHTML = data;
+          
+          // Memastikan script navbar dijalankan
+          const scripts = document.getElementById('navbarContainer').querySelectorAll('script');
+          scripts.forEach(script => {
+            const newScript = document.createElement('script');
+            newScript.textContent = script.textContent;
+            document.body.appendChild(newScript);
+          });
+          
+          // Jalankan inisialisasi navbar
+          if (typeof initNavbar === 'function') {
+            initNavbar();
+          }
+        })
+        .catch(error => console.error('Error loading navbar:', error));
+    });
+  </script>
+</body>
+</html>

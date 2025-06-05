@@ -1,0 +1,13 @@
+{
+  "name": "eai-uts",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"cd user-service && npm run dev\" \"cd menu-service && npm run dev\" \"cd order-service && npm run dev\" \"cd review-service && npm run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "dependencies": {
+    "@google/genai": "^1.3.0"
+  }
+}

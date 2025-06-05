@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard | EAI Microservices</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --accent-color: #4cc9f0;
+      --light-color: #f8f9fa;
+      --dark-color: #212529;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      font-family: 'Poppins', sans-serif;
+    }
+    
+    .navbar {
+      backdrop-filter: blur(10px);
+      background-color: rgba(255, 255, 255, 0.8) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dashboard-header {
+      background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+      border-radius: 15px;
+      padding: 40px 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      color: white;
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .menu-card {
+      background: white;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      text-decoration: none;
+      color: var(--dark-color);
+      position: relative;
+      margin-bottom: 25px;
+      height: 100%;
+    }
+    
+    .menu-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .menu-card .icon-wrapper {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 25px 0;
+      text-align: center;
+      color: var(--primary-color);
+    }
+    
+    .menu-card .content {
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .menu-card h4 {
+      margin: 10px 0;
+      font-weight: 600;
+    }
+    
+    .menu-card p {
+      color: #6c757d;
+      font-size: 14px;
+    }
+    
+    .menu-card .badge {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+    }
+    
+    .admin-section {
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      margin-top: 40px;
+      margin-bottom: 40px;
+    }
+    
+    .admin-card {
+      border: 1px solid #eaeaea;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      color: var(--dark-color);
+      margin-bottom: 20px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 25px 15px;
+    }
+    
+    .admin-card:hover {
+      background: var(--light-color);
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .admin-card i {
+      color: var(--primary-color);
+      margin-bottom: 15px;
+    }
+    
+    .admin-card h5 {
+      margin: 0;
+      font-weight: 600;
+    }
+    
+    .quick-actions {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      z-index: 1000;
+    }
+    
+    .action-btn {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .action-btn:hover {
+      background: var(--secondary-color);
+      transform: scale(1.1);
+    }
+    
+    .action-menu {
+      position: absolute;
+      bottom: 70px;
+      right: 0;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+      width: 200px;
+      overflow: hidden;
+      transform: scale(0);
+      transform-origin: bottom right;
+      transition: all 0.3s ease;
+    }
+    
+    .action-menu.show {
+      transform: scale(1);
+    }
+    
+    .action-menu a {
+      display: flex;
+      align-items: center;
+      padding: 12px 20px;
+      color: var(--dark-color);
+      text-decoration: none;
+      transition: background 0.3s;
+    }
+    
+    .action-menu a:hover {
+      background: var(--light-color);
+    }
+    
+    .action-menu a i {
+      margin-right: 10px;
+      color: var(--primary-color);
+    }
+    
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #ff4757;
+      color: white;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(67, 97, 238, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(67, 97, 238, 0);
+      }
+    }
+
+    .recent-activity {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      margin-bottom: 25px;
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: center;
+      padding: 15px 0;
+      border-bottom: 1px solid #eaeaea;
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+      flex-shrink: 0;
+    }
+
+    .activity-content {
+      flex-grow: 1;
+    }
+
+    .activity-time {
+      color: #6c757d;
+      font-size: 12px;
+    }
+
+    .bg-soft-primary {
+      background-color: rgba(67, 97, 238, 0.15);
+      color: var(--primary-color);
+    }
+
+    .bg-soft-success {
+      background-color: rgba(40, 167, 69, 0.15);
+      color: #28a745;
+    }
+
+    .bg-soft-warning {
+      background-color: rgba(255, 193, 7, 0.15);
+      color: #ffc107;
+    }
+
+    .bg-soft-danger {
+      background-color: rgba(255, 71, 87, 0.15);
+      color: #ff4757;
+    }
+
+    .chart-container {
+      height: 250px;
+      margin-bottom: 20px;
+    }
+  </style>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/poppins/1.1.0/poppins.css" rel="stylesheet">
+</head>
+<body>
+  <!-- Load Navbar -->
+  <div id="navbarContainer"></div>
+
+  <!-- Main Content -->
+  <div class="container mt-4 mb-5">
+    <div class="dashboard-header animate__animated animate__fadeIn">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h1 class="mb-2">Selamat Datang, <span id="userName">Admin</span> 👋</h1>
+          <p class="mb-0">Kelola restoran Anda dengan mudah dan efisien.</p>
+        </div>
+        <div class="col-md-4 text-md-end text-center mt-3 mt-md-0">
+          <button class="btn btn-light btn-lg"><i class="fas fa-bell me-2"></i> Notifikasi <span class="badge bg-danger">3</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row mb-4 animate__animated animate__fadeInUp animate__delay-1s">
+      <div class="col-md-3 col-sm-6">
+        <div class="stat-card text-center">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Total Pesanan</h5>
+            <i class="fas fa-shopping-cart fa-lg text-primary"></i>
+          </div>
+          <h2 class="mt-3 mb-0">254</h2>
+          <p class="text-success mb-0"><i class="fas fa-arrow-up me-1"></i> 12.5% dari bulan lalu</p>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="stat-card text-center">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Pendapatan</h5>
+            <i class="fas fa-money-bill-wave fa-lg text-success"></i>
+          </div>
+          <h2 class="mt-3 mb-0">Rp 25.4 jt</h2>
+          <p class="text-success mb-0"><i class="fas fa-arrow-up me-1"></i> 8.3% dari bulan lalu</p>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="stat-card text-center">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Rating</h5>
+            <i class="fas fa-star fa-lg text-warning"></i>
+          </div>
+          <h2 class="mt-3 mb-0">4.8</h2>
+          <p class="text-success mb-0"><i class="fas fa-arrow-up me-1"></i> 0.2 dari bulan lalu</p>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="stat-card text-center">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Pelanggan</h5>
+            <i class="fas fa-users fa-lg text-info"></i>
+          </div>
+          <h2 class="mt-3 mb-0">1,247</h2>
+          <p class="text-success mb-0"><i class="fas fa-arrow-up me-1"></i> 5.7% dari bulan lalu</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart Row -->
+    <div class="row mb-4 animate__animated animate__fadeInUp animate__delay-2s">
+      <div class="col-md-8">
+        <div class="stat-card">
+          <h5 class="mb-3">Analisis Penjualan</h5>
+          <div class="chart-container">
+            <canvas id="salesChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="stat-card">
+          <h5 class="mb-3">Distribusi Menu</h5>
+          <div class="chart-container">
+            <canvas id="menuChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Menu Section -->
+    <h4 class="mb-3 animate__animated animate__fadeInUp animate__delay-2s">Menu Utama</h4>
+    <div class="row animate__animated animate__fadeInUp animate__delay-3s">
+      <div class="col-lg-3 col-md-6 mb-4">
+        <a href="menus.html" class="menu-card d-block">
+          <div class="icon-wrapper">
+            <i class="fas fa-book-open fa-3x"></i>
+          </div>
+          <div class="content">
+            <h4>Menu Makanan</h4>
+            <p>Kelola menu, kategori, dan harga</p>
+          </div>
+          <span class="badge bg-success">Online</span>
+        </a>
+      </div>
+      <div class="col-lg-3 col-md-6 mb-4">
+        <a href="orders.html" class="menu-card d-block">
+          <div class="icon-wrapper">
+            <i class="fas fa-shopping-cart fa-3x"></i>
+          </div>
+          <div class="content">
+            <h4>Pesanan</h4>
+            <p>Kelola pesanan masuk dan proses</p>
+          </div>
+          <span class="badge bg-danger pulse">5 Baru</span>
+        </a>
+      </div>
+      <div class="col-lg-3 col-md-6 mb-4">
+        <a href="reviews.html" class="menu-card d-block">
+          <div class="icon-wrapper">
+            <i class="fas fa-star fa-3x"></i>
+          </div>
+          <div class="content">
+            <h4>Ulasan</h4>
+            <p>Lihat dan balas ulasan pelanggan</p>
+          </div>
+          <span class="badge bg-warning">3 Baru</span>
+        </a>
+      </div>
+      <div class="col-lg-3 col-md-6 mb-4">
+        <a href="user-profile.html" class="menu-card d-block">
+          <div class="icon-wrapper">
+            <i class="fas fa-user-circle fa-3x"></i>
+          </div>
+          <div class="content">
+            <h4>Profil</h4>
+            <p>Kelola profil dan pengaturan</p>
+          </div>
+          <span class="badge bg-info">Update</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row mt-4 animate__animated animate__fadeInUp animate__delay-4s">
+      <div class="col-md-8">
+        <div class="recent-activity">
+          <h5 class="mb-4">Aktivitas Terbaru</h5>
+          
+          <div class="activity-item">
+            <div class="activity-icon bg-soft-primary">
+              <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="activity-content">
+              <h6 class="mb-1">Pesanan Baru #12345</h6>
+              <p class="mb-0">Pelanggan: Budi Santoso - 3 Item</p>
+              <div class="activity-time">10 menit yang lalu</div>
+            </div>
+          </div>
+          
+          <div class="activity-item">
+            <div class="activity-icon bg-soft-success">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="activity-content">
+              <h6 class="mb-1">Pesanan #12342 Selesai</h6>
+              <p class="mb-0">Pesanan telah diterima pelanggan</p>
+              <div class="activity-time">45 menit yang lalu</div>
+            </div>
+          </div>
+          
+          <div class="activity-item">
+            <div class="activity-icon bg-soft-warning">
+              <i class="fas fa-star"></i>
+            </div>
+            <div class="activity-content">
+              <h6 class="mb-1">Ulasan Baru dari Ahmad</h6>
+              <p class="mb-0">Rating: 4.5 - "Makanan enak dan cepat sampai..."</p>
+              <div class="activity-time">1 jam yang lalu</div>
+            </div>
+          </div>
+          
+          <div class="activity-item">
+            <div class="activity-icon bg-soft-danger">
+              <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="activity-content">
+              <h6 class="mb-1">Stok Nasi Goreng Hampir Habis</h6>
+              <p class="mb-0">Tersisa 5 porsi</p>
+              <div class="activity-time">2 jam yang lalu</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-4">
+        <div class="recent-activity">
+          <h5 class="mb-4">Menu Populer</h5>
+          
+          <div class="activity-item">
+            <div class="activity-icon bg-soft-success">
+              <i class="fas fa-utensils"></i>
+            </div>
+            <div class="activity-content">
+              <h6 class="mb-1">Nasi Goreng Spesial</h6>
+              <p class="mb-0">Terjual: 42 porsi hari ini</p>
+            </div>
+          </div>
+          
+          <div class="activity-item">
+            <div class="activity-icon bg-soft-success">
+              <i class="fas fa-utensils"></i>
+            </div>
+            <div class="activity-content">
+              <h6 class="mb-1">Ayam Bakar Madu</h6>
+              <p class="mb-0">Terjual: 38 porsi hari ini</p>
+            </div>
+          </div>
+          
+          <div class="activity-item">
+            <div class="activity-icon bg-soft-success">
+              <i class="fas fa-utensils"></i>
+            </div>
+            <div class="activity-content">
+              <h6 class="mb-1">Es Teh Manis</h6>
+              <p class="mb-0">Terjual: 67 gelas hari ini</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="admin-section animate__animated animate__fadeInUp animate__delay-5s">
+      <h4 class="text-center mb-4">Panel Admin</h4>
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <a href="all-orders.html" class="admin-card">
+            <i class="fas fa-list-alt fa-2x"></i>
+            <h5 class="mt-2">Semua Pesanan</h5>
+          </a>
+        </div>
+        <div class="col-md-4 mb-3">
+          <a href="all-reviews.html" class="admin-card">
+            <i class="fas fa-comments fa-2x"></i>
+            <h5 class="mt-2">Semua Ulasan</h5>
+          </a>
+        </div>
+        <div class="col-md-4 mb-3">
+          <a href="users.html" class="admin-card">
+            <i class="fas fa-users fa-2x"></i>
+            <h5 class="mt-2">Pengguna</h5>
+          </a>
+        </div>
+      </div>
+      <div class="row mt-3">
+        <div class="col-md-4 mb-3">
+          <a href="inventory.html" class="admin-card">
+            <i class="fas fa-warehouse fa-2x"></i>
+            <h5 class="mt-2">Inventaris</h5>
+          </a>
+        </div>
+        <div class="col-md-4 mb-3">
+          <a href="reports.html" class="admin-card">
+            <i class="fas fa-chart-line fa-2x"></i>
+            <h5 class="mt-2">Laporan</h5>
+          </a>
+        </div>
+        <div class="col-md-4 mb-3">
+          <a href="settings.html" class="admin-card">
+            <i class="fas fa-cog fa-2x"></i>
+            <h5 class="mt-2">Pengaturan</h5>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions Button -->
+  <div class="quick-actions">
+    <div class="action-btn" id="quickActionsBtn">
+      <i class="fas fa-plus"></i>
+      <span class="notification-badge">3</span>
+    </div>
+    <div class="action-menu" id="actionMenu">
+      <a href="new-order.html"><i class="fas fa-plus-circle"></i> Tambah Pesanan</a>
+      <a href="new-menu.html"><i class="fas fa-utensils"></i> Tambah Menu</a>
+      <a href="send-promo.html"><i class="fas fa-bullhorn"></i> Kirim Promo</a>
+      <a href="support.html"><i class="fas fa-headset"></i> Bantuan</a>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <script>
+    fetch("navbar.html")
+      .then(res => res.text())
+      .then(data => {
+        document.getElementById("navbarContainer").innerHTML = data;
+      });
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "index.html";
+    } else {
+      document.getElementById("userName").textContent = localStorage.getItem("userName") || "Admin";
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = "index.html";
+    }
+
+    document.getElementById("quickActionsBtn").addEventListener("click", function() {
+      document.getElementById("actionMenu").classList.toggle("show");
+    });
+
+    document.addEventListener("click", function(event) {
+      if (!event.target.closest(".quick-actions")) {
+        document.getElementById("actionMenu").classList.remove("show");
+      }
+    });
+
+    window.onload = function() {
+      const salesCtx = document.getElementById('salesChart').getContext('2d');
+      const salesChart = new Chart(salesCtx, {
+        type: 'line',
+        data: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul'],
+          datasets: [{
+            label: 'Penjualan (juta Rp)',
+            data: [12, 19, 15, 17, 22, 25, 32],
+            backgroundColor: 'rgba(67, 97, 238, 0.2)',
+            borderColor: 'rgba(67, 97, 238, 1)',
+            borderWidth: 2,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+
+      const menuCtx = document.getElementById('menuChart').getContext('2d');
+      const menuChart = new Chart(menuCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Makanan Utama', 'Minuman', 'Dessert', 'Snack'],
+          datasets: [{
+            data: [45, 25, 15, 15],
+            backgroundColor: [
+              'rgba(67, 97, 238, 0.7)',
+              'rgba(76, 201, 240, 0.7)',
+              'rgba(0, 180, 137, 0.7)',
+              'rgba(247, 127, 0, 0.7)'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
+    };
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Memuat navbar dari file navbar.html
+      fetch('navbar.html')
+        .then(response => response.text())
+        .then(data => {
+          document.getElementById('navbarContainer').innerHTML = data;
+          
+          // Memastikan script navbar dijalankan
+          const scripts = document.getElementById('navbarContainer').querySelectorAll('script');
+          scripts.forEach(script => {
+            const newScript = document.createElement('script');
+            newScript.textContent = script.textContent;
+            document.body.appendChild(newScript);
+          });
+          
+          // Jalankan inisialisasi navbar
+          if (typeof initNavbar === 'function') {
+            initNavbar();
+          }
+        })
+        .catch(error => console.error('Error loading navbar:', error));
+    });
+  </script>
+</body>
+</html>

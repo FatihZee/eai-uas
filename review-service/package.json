@@ -1,0 +1,39 @@
+{
+  "name": "review-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "start:rest": "node app.js",
+    "dev:rest": "nodemon app.js",
+    "start:graphql": "node server.js",
+    "dev:graphql": "nodemon server.js",
+    "dev:both": "concurrently \"npm run dev:rest\" \"npm run dev:graphql\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^1.4.0",
+    "@google/generative-ai": "^0.24.1",
+    "@nlpjs/basic": "^4.26.1",
+    "@nlpjs/lang-id": "^4.26.1",
+    "@nlpjs/nlp": "^4.26.1",
+    "apollo-server-express": "^3.12.0",
+    "axios": "^1.5.0",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "graphql": "^16.8.1",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.6.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.1"
+  }
+}

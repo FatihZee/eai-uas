@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>User Profile | EAI Microservices</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --accent-color: #4cc9f0;
+      --light-color: #f8f9fa;
+      --dark-color: #212529;
+    }
+    
+    body {
+      background-color: #f0f2f5;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .profile-header {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      color: white;
+      border-radius: 15px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .profile-avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background-color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      font-size: 3rem;
+      color: var(--primary-color);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .profile-card {
+      background-color: white;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      overflow: hidden;
+    }
+    
+    .profile-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    }
+    
+    .order-card {
+      height: 100%;
+      border: none;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .order-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+    }
+    
+    .order-header {
+      background: linear-gradient(135deg, #f9c5d1, #f3c4fb);
+      color: var(--dark-color);
+      padding: 1rem;
+    }
+    
+    .btn-custom-primary {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      border: none;
+      color: white;
+      padding: 0.5rem 1.5rem;
+      border-radius: 50px;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+    }
+    
+    .btn-custom-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(67, 97, 238, 0.4);
+      color: white;
+    }
+    
+    .btn-custom-warning {
+      background: linear-gradient(135deg, #ffb300, #ffb300);
+      border: none;
+      color: white;
+      padding: 0.5rem 1.5rem;
+      border-radius: 50px;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(251, 86, 7, 0.3);
+    }
+    
+    .btn-custom-warning:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(251, 86, 7, 0.4);
+      color: white;
+    }
+    
+    .btn-custom-danger {
+      background: linear-gradient(135deg, #ff5e5b, #ff5e5b);
+      border: none;
+      color: white;
+      padding: 0.5rem 1.5rem;
+      border-radius: 50px;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(216, 17, 89, 0.3);
+    }
+    
+    .btn-custom-danger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(216, 17, 89, 0.4);
+      color: white;
+    }
+    
+    .modal-content {
+      border-radius: 15px;
+      overflow: hidden;
+    }
+    
+    .modal-header {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      color: white;
+      border-bottom: none;
+    }
+    
+    .form-control {
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      border: 1px solid #e1e5eb;
+      transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.25);
+      border-color: var(--primary-color);
+    }
+    
+    .review-box {
+      background-color: #f8f9fa;
+      border-radius: 10px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .star-rating {
+      color: #ffb400;
+      font-size: 1.2rem;
+    }
+    
+    .badge-menu {
+      background-color: var(--accent-color);
+      color: var(--dark-color);
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      margin-bottom: 0.5rem;
+      display: inline-block;
+    }
+    
+    .info-item {
+      padding: 0.75rem;
+      border-bottom: 1px solid #e1e5eb;
+      display: flex;
+      align-items: center;
+    }
+    
+    .info-item:last-child {
+      border-bottom: none;
+    }
+    
+    .info-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 1rem;
+      color: var(--primary-color);
+    }
+    
+    .loader {
+      width: 48px;
+      height: 48px;
+      border: 5px solid var(--light-color);
+      border-bottom-color: var(--primary-color);
+      border-radius: 50%;
+      display: inline-block;
+      box-sizing: border-box;
+      animation: rotation 1s linear infinite;
+    }
+    
+    @keyframes rotation {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+    
+    .section-title {
+      position: relative;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 50px;
+      height: 3px;
+      background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    }
+  </style>
+</head>
+<body>
+  <div id="navbarContainer"></div>
+
+  <div class="container my-5">
+    <div id="loadingIndicator" class="text-center py-5">
+      <span class="loader"></span>
+      <p class="mt-3">Loading your profile...</p>
+    </div>
+    
+    <div id="profileContent" class="animate__animated animate__fadeIn" style="display:none;">
+      <div class="profile-header animate__animated animate__fadeInDown">
+        <div class="row align-items-center">
+          <div class="col-lg-2 col-md-3 text-center">
+            <div class="profile-avatar mx-auto">
+              <i class="fas fa-user"></i>
+            </div>
+          </div>
+          <div class="col-lg-7 col-md-6">
+            <h2 id="profileName" class="mb-0">User Name</h2>
+            <p id="profileEmail" class="mb-2 opacity-75">user@example.com</p>
+            <p id="profilePhone" class="mb-0 opacity-75"><i class="fas fa-phone-alt me-2"></i>Phone Number</p>
+          </div>
+          <div class="col-lg-3 col-md-3 mt-3 mt-md-0 text-center text-md-end">
+            <button class="btn btn-custom-warning mb-2 mb-md-0" data-bs-toggle="modal" data-bs-target="#editModal">
+              <i class="fas fa-edit me-1"></i>Edit Profile
+            </button>
+            <button class="btn btn-custom-danger" onclick="confirmDelete()">
+              <i class="fas fa-trash-alt me-1"></i>Delete Account
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mb-4">
+        <div class="col-md-12">
+          <h4 class="section-title"><i class="fas fa-history me-2"></i>Order & Review History</h4>
+        </div>
+      </div>
+
+      <div id="userHistory" class="row g-4 mb-4 animate__animated animate__fadeInUp"></div>
+      
+      <div id="noOrdersMessage" class="text-center p-5 bg-light rounded shadow-sm" style="display:none;">
+        <i class="fas fa-shopping-bag fa-3x mb-3 text-muted"></i>
+        <h4>No Orders Yet</h4>
+        <p class="mb-3">You haven't placed any orders yet.</p>
+        <a href="menu.html" class="btn btn-custom-primary">Browse Menu</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Profile -->
+  <div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" id="editForm">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i>Edit Profile</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light">
+                <i class="fas fa-user"></i>
+              </span>
+              <input type="text" id="editName" class="form-control" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light">
+                <i class="fas fa-envelope"></i>
+              </span>
+              <input type="email" id="editEmail" class="form-control" required>
+            </div>  
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Phone</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light">
+                <i class="fas fa-phone-alt"></i>
+              </span>
+              <input type="text" id="editPhone" class="form-control">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">New Password (optional)</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light">
+                <i class="fas fa-lock"></i>
+              </span>
+              <input type="password" id="editPassword" class="form-control">
+              <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-custom-primary" type="submit" id="saveButton">
+            <span id="saveSpinner" class="spinner-border spinner-border-sm me-1" role="status" style="display:none;"></span>
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Delete Confirmation Modal -->
+  <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="text-center mb-4">
+            <i class="fas fa-user-slash fa-4x text-danger mb-3"></i>
+            <h4>Are you absolutely sure?</h4>
+            <p class="text-muted">This action <strong>cannot</strong> be undone. All your data, orders, and reviews will be permanently deleted.</p>
+          </div>
+          <div class="d-flex justify-content-center">
+            <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">
+              <i class="fas fa-times me-1"></i>Cancel
+            </button>
+            <button type="button" class="btn btn-custom-danger" onclick="deleteMyAccount()">
+              <i class="fas fa-trash-alt me-1"></i>Delete My Account
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Toast -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">
+          <i class="fas fa-check-circle me-2"></i><span id="toastMessage">Profile updated successfully!</span>
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!token) return window.location.href = "index.html";
+
+      const loadingIndicator = document.getElementById("loadingIndicator");
+      const profileContent = document.getElementById("profileContent");
+      const profileName = document.getElementById("profileName");
+      const profileEmail = document.getElementById("profileEmail");
+      const profilePhone = document.getElementById("profilePhone");
+      const userHistory = document.getElementById("userHistory");
+      const noOrdersMessage = document.getElementById("noOrdersMessage");
+      const editForm = document.getElementById("editForm");
+      const editModal = new bootstrap.Modal(document.getElementById("editModal"));
+      const deleteConfirmModal = new bootstrap.Modal(document.getElementById("deleteConfirmModal"));
+      const successToast = new bootstrap.Toast(document.getElementById("successToast"));
+      const saveButton = document.getElementById("saveButton");
+      const saveSpinner = document.getElementById("saveSpinner");
+      const togglePassword = document.getElementById("togglePassword");
+      const editPassword = document.getElementById("editPassword");
+
+      // Toggle password visibility
+      togglePassword.addEventListener('click', function() {
+        const type = editPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+        editPassword.setAttribute('type', type);
+        this.querySelector('i').classList.toggle('fa-eye');
+        this.querySelector('i').classList.toggle('fa-eye-slash');
+      });
+
+      function showToast(message) {
+        document.getElementById("toastMessage").textContent = message;
+        successToast.show();
+      }
+
+      function displayStarRating(rating) {
+        let stars = '';
+        for (let i = 1; i <= 5; i++) {
+          if (i <= rating) {
+            stars += '<i class="fas fa-star"></i>';
+          } else if (i - 0.5 <= rating) {
+            stars += '<i class="fas fa-star-half-alt"></i>';
+          } else {
+            stars += '<i class="far fa-star"></i>';
+          }
+        }
+        return stars;
+      }
+
+      function renderUserInfo(data) {
+        profileName.textContent = data.name;
+        profileEmail.textContent = data.email;
+        profilePhone.innerHTML = `<i class="fas fa-phone-alt me-2"></i>${data.phone || 'No phone number'}`;
+
+        document.getElementById("editName").value = data.name;
+        document.getElementById("editEmail").value = data.email;
+        document.getElementById("editPhone").value = data.phone || '';
+        document.getElementById("editPassword").value = '';
+      }
+
+      function formatCurrency(amount) {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' })
+          .format(amount)
+          .replace(/\,00$/, '');
+      }
+
+      function formatDate(dateString) {
+        const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+        return new Date(dateString).toLocaleDateString('id-ID', options);
+      }
+
+      async function loadUserData() {
+        try {
+          const res = await fetch(`http://localhost:3001/users/${user.id}/with-orders-reviews`);
+          if (!res.ok) throw new Error('Failed to load user data');
+          
+          const data = await res.json();
+          renderUserInfo(data.user);
+          
+          if (data.orders && data.orders.length > 0) {
+            userHistory.innerHTML = data.orders.map(o => `
+              <div class="col-md-6 col-lg-4 animate__animated animate__fadeIn">
+                <div class="order-card card shadow-sm h-100">
+                  <div class="order-header">
+                    <span class="badge-menu"><i class="fas fa-utensils me-1"></i>${o.menu_name}</span>
+                    <h5 class="card-title">${formatCurrency(parseInt(o.total_price))}</h5>
+                    <div class="small text-muted">
+                      <i class="far fa-calendar-alt me-1"></i>${formatDate(o.created_at || new Date())}
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                      <div>
+                        <strong>Quantity:</strong>
+                      </div>
+                      <div>
+                        <span class="badge bg-primary rounded-pill">${o.quantity}</span>
+                      </div>
+                    </div>
+                    ${o.reviews && o.reviews.length > 0 ? o.reviews.map(r => `
+                      <div class="review-box">
+                        <div class="star-rating mb-2">
+                          ${displayStarRating(r.rating)}
+                        </div>
+                        <p class="card-text mb-0">${r.comment}</p>
+                      </div>
+                    `).join('') : `
+                      <p class="text-center text-muted my-3">
+                        <i class="far fa-comment-dots me-1"></i>No review yet
+                      </p>
+                    `}
+                  </div>
+                </div>
+              </div>
+            `).join('');
+            noOrdersMessage.style.display = 'none';
+          } else {
+            userHistory.innerHTML = '';
+            noOrdersMessage.style.display = 'block';
+          }
+          
+          // Show content and hide loading
+          loadingIndicator.style.display = 'none';
+          profileContent.style.display = 'block';
+        } catch (error) {
+          console.error('Error loading user data:', error);
+          // Show error message
+          loadingIndicator.innerHTML = `
+            <div class="text-center py-5">
+              <i class="fas fa-exclamation-circle fa-3x text-danger mb-3"></i>
+              <h4>Failed to load profile data</h4>
+              <p>Please try refreshing the page</p>
+              <button class="btn btn-custom-primary mt-3" onclick="window.location.reload()">
+                <i class="fas fa-sync me-1"></i>Refresh
+              </button>
+            </div>
+          `;
+        }
+      }
+
+      editForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        saveButton.disabled = true;
+        saveSpinner.style.display = 'inline-block';
+        
+        const name = document.getElementById("editName").value;
+        const email = document.getElementById("editEmail").value;
+        const phone = document.getElementById("editPhone").value;
+        const password = document.getElementById("editPassword").value;
+
+        const body = { name, email, phone };
+        if (password) body.password = password;
+
+        try {
+          const res = await fetch(`http://localhost:3001/users/${user.id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + token
+            },
+            body: JSON.stringify(body)
+          });
+
+          if (res.ok) {
+            localStorage.setItem("user", JSON.stringify({ ...user, name, email, phone }));
+            editModal.hide();
+            loadUserData();
+            showToast("Profile updated successfully!");
+          } else {
+            alert("Failed to update profile. Please try again.");
+          }
+        } catch (error) {
+          console.error('Error updating profile:', error);
+          alert("An error occurred. Please try again later.");
+        } finally {
+          saveButton.disabled = false;
+          saveSpinner.style.display = 'none';
+        }
+      });
+
+      window.confirmDelete = () => {
+        deleteConfirmModal.show();
+      };
+
+      window.deleteMyAccount = async () => {
+        try {
+          const res = await fetch(`http://localhost:3001/users/${user.id}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: "Bearer " + token
+            }
+          });
+          
+          if (res.ok) {
+            showToast("Account deleted successfully!");
+            setTimeout(() => {
+              localStorage.clear();
+              window.location.href = "index.html";
+            }, 1500);
+          } else {
+            alert("Failed to delete account. Please try again.");
+            deleteConfirmModal.hide();
+          }
+        } catch (error) {
+          console.error('Error deleting account:', error);
+          alert("An error occurred. Please try again later.");
+          deleteConfirmModal.hide();
+        }
+      };
+
+      window.logout = () => {
+        localStorage.clear();
+        window.location.href = "index.html";
+      };
+
+      loadUserData();
+    });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Memuat navbar dari file navbar.html
+      fetch('navbar.html')
+        .then(response => response.text())
+        .then(data => {
+          document.getElementById('navbarContainer').innerHTML = data;
+          
+          // Memastikan script navbar dijalankan
+          const scripts = document.getElementById('navbarContainer').querySelectorAll('script');
+          scripts.forEach(script => {
+            const newScript = document.createElement('script');
+            newScript.textContent = script.textContent;
+            document.body.appendChild(newScript);
+          });
+          
+          // Jalankan inisialisasi navbar
+          if (typeof initNavbar === 'function') {
+            initNavbar();
+          }
+        })
+        .catch(error => console.error('Error loading navbar:', error));
+    });
+  </script>
+</body>
+</html>

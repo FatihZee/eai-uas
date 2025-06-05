@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EAI Microservices - Enhanced Navbar</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    #navbar-component {
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
+      padding: 0.8rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    
+    .navbar-brand {
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .brand-icon {
+      background-color: rgba(255, 215, 0, 0.2);
+      border-radius: 10px;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 10px;
+      transition: all 0.4s ease;
+    }
+    
+    .brand-icon i {
+      color: #FFD700;
+      font-size: 1.2rem;
+    }
+    
+    .navbar-brand:hover .brand-icon {
+      transform: rotate(10deg) scale(1.1);
+      background-color: rgba(255, 215, 0, 0.3);
+    }
+    
+    .nav-item {
+      margin: 0 3px;
+      position: relative;
+    }
+    
+    .nav-link {
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      transition: all 0.3s ease;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+    }
+    
+    .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+    }
+    
+    .nav-link i {
+      margin-right: 8px;
+      transition: transform 0.3s ease;
+    }
+    
+    .nav-link:hover i {
+      transform: scale(1.2);
+    }
+    
+    .nav-link.active {
+      background-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .user-welcome {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 30px;
+      padding: 5px 15px;
+      margin-right: 10px;
+      transition: all 0.3s ease;
+    }
+    
+    .user-welcome:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(45deg, #FFD700, #FFA500);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 10px;
+      font-weight: bold;
+      color: #1e3c72;
+    }
+    
+    .user-name {
+      font-weight: 600;
+      color: white;
+      max-width: 160px; /* Memperlebar area nama */
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .logout-btn {
+      background: linear-gradient(45deg, #ff9966, #ff5e62);
+      border: none;
+      color: white !important;
+      border-radius: 8px;
+      padding: 0.6rem 1.2rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .logout-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 94, 98, 0.4);
+    }
+    
+    .logout-btn i {
+      margin-right: 8px;
+    }
+    
+    @media (max-width: 992px) {
+      .navbar-collapse {
+        background: rgba(30, 60, 114, 0.98);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      }
+      
+      .nav-item {
+        margin: 6px 0;
+      }
+      
+      .user-welcome {
+        margin: 10px 0;
+        width: 100%;
+      }
+      
+      .user-name {
+        max-width: none; /* Full width on mobile */
+      }
+    }
+    
+    .badge-notify {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: #ff5252;
+      border-radius: 50%;
+      font-size: 10px;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Animation for navbar */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    #navbar-component {
+      animation: fadeIn 0.5s ease forwards;
+    }
+  </style>
+</head>
+<body>
+
+<div id="navbarContainer">
+  <nav id="navbar-component" class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="dashboard.html">
+        <div class="brand-icon">
+          <i class="fas fa-utensils"></i>
+        </div>
+        EAI Microservices
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-expanded="false">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="menus.html">
+              <i class="fas fa-book-open"></i>Menus
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="orders.html">
+              <i class="fas fa-shopping-cart"></i>Orders
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="reviews.html">
+              <i class="fas fa-star"></i>Reviews
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="user-profile.html">
+              <i class="fas fa-user-circle"></i>Profile
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="all-orders.html">
+              <i class="fas fa-list"></i>All Orders
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="all-reviews.html">
+              <i class="fas fa-comments"></i>All Reviews
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="users.html">
+              <i class="fas fa-users"></i>Users
+            </a>
+          </li>
+          <li class="nav-item user-profile">
+            <div class="user-welcome">
+              <div class="user-avatar" id="userInitial">F</div>
+              <div class="user-name" id="profileName">Loading...</div>
+            </div>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link logout-btn" href="#" onclick="logout()">
+              <i class="fas fa-sign-out-alt"></i>Logout
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</div>
+
+<script>
+  // Function to set active nav item based on current page
+  function setActiveNavItem() {
+    const currentPage = window.location.pathname.split('/').pop();
+    const navLinks = document.querySelectorAll('.nav-link');
+    
+    navLinks.forEach(link => {
+      const href = link.getAttribute('href');
+      if (href === currentPage) {
+        link.classList.add('active');
+      }
+    });
+  }
+  
+  // Function to get user info and display it
+  function displayUserInfo() {
+    try {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      if (!token) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      const profileName = document.getElementById("profileName");
+      const userInitial = document.getElementById("userInitial");
+
+      console.log("User data:", user); // Debugging
+
+      if (user && user.name) {
+        // Ambil nama depan (sebelum spasi)
+        const firstName = user.name.split(' ')[0];
+
+        // Tampilkan nama depan saja
+        profileName.textContent = firstName;
+        profileName.title = user.name; // Tooltip untuk nama lengkap
+
+        // Set inisial user (huruf pertama nama depan)
+        userInitial.textContent = firstName.charAt(0).toUpperCase();
+      } else {
+        console.error("Nama pengguna tidak ditemukan dalam data user");
+        profileName.textContent = "User";
+      }
+    } catch (error) {
+      console.error("Error menampilkan info user:", error);
+      document.getElementById("profileName").textContent = "Error";
+    }
+  }
+
+  
+  // Logout function
+  function logout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    alert("Berhasil logout!");
+    window.location.href = "index.html";
+  }
+  
+  // Initialize navbar component
+  function initNavbar() {
+    // Jalankan dengan delay kecil untuk memastikan DOM sudah siap
+    setTimeout(function() {
+      displayUserInfo();
+      setActiveNavItem();
+    }, 100);
+  }
+  
+  // Run initialization when DOM is loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNavbar);
+  } else {
+    initNavbar(); // Jika DOM sudah loaded
+  }
+  
+  // Script untuk memuat navbar di halaman lain
+  class NavbarLoader {
+    static loadNavbar(containerId) {
+      const container = document.getElementById(containerId || 'navbarContainer');
+      if (container) {
+        // Kode untuk memuat navbar ke container
+        console.log("Navbar loaded");
+        initNavbar();
+      }
+    }
+  }
+  
+  // Make navbar available globally
+  window.NavbarLoader = NavbarLoader;
+</script>
+
+</body>
+</html>
