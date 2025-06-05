@@ -1,23 +1,26 @@
 const { gql } = require('apollo-server-express');
 
 const typeDefs = gql`
+  scalar Date
+
   type Menu {
     id: ID!
     name: String!
     description: String
     price: Float!
-    user_id: Int! # ID user yang membuat
-    created_at: String
-    updated_at: String
-    orderCount: Int # Jumlah menu ini dipesan
-    createdBy: User # Detail user yang membuat
+    user_id: Int!
+    created_at: Date  # Menggunakan Date scalar
+    updated_at: Date  # Menggunakan Date scalar
+    orderCount: Int
+    createdBy: User
   }
 
   type User {
     id: ID!
-    name: String
-    email: String
-    # Tambahkan field lain dari User jika perlu, tanpa password
+    name: String!
+    email: String!
+    phone: String
+    created_at: Date  # Menggunakan Date scalar
   }
 
   type MenuActionResponse {
@@ -34,7 +37,6 @@ const typeDefs = gql`
     name: String!
     description: String
     price: Float!
-    # user_id akan diambil dari context token
   }
 
   input UpdateMenuInput {

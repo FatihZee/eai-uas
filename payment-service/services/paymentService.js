@@ -41,6 +41,7 @@ class PaymentService {
 
   static async createPayment(userId, orderId, token) {
     try {
+      // Fetch user dari REST API
       const userRes = await axios.get(`${USER_SERVICE_URL}/users/${userId}`, {
         headers: { Authorization: token }
       });
@@ -49,6 +50,7 @@ class PaymentService {
         throw new Error('User not found');
       }
 
+      // Fetch order dari REST API  
       const orderRes = await axios.get(`${ORDER_SERVICE_URL}/orders/${orderId}`, {
         headers: { Authorization: token }
       });
@@ -60,6 +62,7 @@ class PaymentService {
       const order = orderRes.data;
       const user = userRes.data;
 
+      // Validasi order belongs to user
       if (order.user_id !== parseInt(userId)) {
         throw new Error('Order does not belong to the authenticated user.');
       }
@@ -84,6 +87,7 @@ class PaymentService {
 
       const transaction = await snap.createTransaction(parameter);
 
+      // Save to database using Sequelize
       const newPayment = await Payment.create({
         user_id: userId,
         order_id: orderId,
@@ -101,39 +105,11 @@ class PaymentService {
       };
 
     } catch (error) {
-      console.error('PaymentService.createPayment - Original error:', error);
-
-      let finalMessage;
-      // Prioritize specific error sources
-      if (error.isAxiosError) { 
-        if (error.response && error.response.data && error.response.data.message) {
-          finalMessage = `Dependency Error: ${error.response.data.message}`;
-        } else if (error.response && error.response.status) {
-          finalMessage = `Dependency Error: Status ${error.response.status} - ${error.response.statusText || 'No further details'}`;
-        } else {
-          finalMessage = `Network or Dependency Error: ${error.message || 'Connection issue'}`;
-        }
-      } else if (error.ApiResponse && error.ApiResponse.status_message) { // Midtrans specific errors
-        finalMessage = `Midtrans Payment Error: ${error.ApiResponse.status_message}`;
-        if (error.ApiResponse.validation_messages && error.ApiResponse.validation_messages.length > 0) {
-          finalMessage += ` (Details: ${error.ApiResponse.validation_messages.join(', ')})`;
-        }
-      } else if (error.name && error.name.startsWith('Sequelize')) { // Sequelize errors
-        finalMessage = `Database Error: ${error.message || 'Failed to save payment data.'}`;
-      } else if (error.message && error.message.trim() !== "") { // Generic errors with a non-empty message
-        finalMessage = error.message;
-      } else if (typeof error === 'string' && error.trim() !== "") { // If error is just a non-empty string
-        finalMessage = error;
-      } else {
-        finalMessage = "An unexpected internal error occurred while processing the payment.";
+      console.error('Error in PaymentService.createPayment:', error.message);
+      if (error.response && error.response.data) {
+        throw new Error(`Failed to create payment: ${error.response.data.message || error.message}`);
       }
-      
-      // Ensure a prefix for context if the message doesn't already provide it
-      if (!finalMessage.toLowerCase().includes('payment') && !finalMessage.toLowerCase().includes('dependency') && !finalMessage.toLowerCase().includes('database') && !finalMessage.toLowerCase().includes('midtrans')) {
-         throw new Error(`Payment Creation Failed: ${finalMessage}`);
-      } else {
-         throw new Error(finalMessage); 
-      }
+      throw new Error(`Failed to create payment: ${error.message}`);
     }
   }
 

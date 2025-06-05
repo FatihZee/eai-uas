@@ -271,11 +271,16 @@
                             <p class="mb-1"><strong>Amount:</strong> Rp ${parseInt(paymentInfo.amount).toLocaleString()}</p>
                             <p class="mb-0"><strong>Date:</strong> ${new Date(paymentInfo.transaction_time).toLocaleDateString()}</p>
                           </div>
-                          ${paymentInfo.redirect_url && paymentInfo.status === 'pending' ? `
-                            <button class="btn btn-warning" onclick="window.open('${paymentInfo.redirect_url}', '_blank')">
-                              <i class="fas fa-external-link-alt me-1"></i>Continue Payment
+                          <div class="text-end">
+                            <button class="btn btn-outline-primary btn-sm me-2" onclick="checkPaymentStatus('${paymentInfo.id}')" title="Check Payment Status">
+                              <i class="fas fa-sync me-1"></i>Check Status
                             </button>
-                          ` : ''}
+                            ${paymentInfo.redirect_url && paymentInfo.status === 'pending' ? `
+                              <button class="btn btn-warning" onclick="window.open('${paymentInfo.redirect_url}', '_blank')">
+                                <i class="fas fa-external-link-alt me-1"></i>Continue Payment
+                              </button>
+                            ` : ''}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -364,6 +369,47 @@
               confirmButtonColor: '#6366f1'
             });
           }
+        }
+      };
+
+      // Add payment status checker function
+      window.checkPaymentStatus = async (paymentId) => {
+        try {
+          Swal.fire({
+            title: 'Checking Status...',
+            text: 'Please wait while we check the latest payment status',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+
+          const response = await fetch(`http://localhost:3005/api/payments/${paymentId}/status`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            Swal.fire({
+              title: 'Status Updated!',
+              text: `Payment status: ${result.current_status}`,
+              icon: 'success',
+              confirmButtonColor: '#6366f1'
+            });
+
+            // Reload order details to show updated payment status
+            loadOrderDetail();
+          } else {
+            throw new Error(result.detail || 'Failed to check status');
+          }
+        } catch (error) {
+          Swal.fire({
+            title: 'Error',
+            text: `Failed to check payment status: ${error.message}`,
+            icon: 'error',
+            confirmButtonColor: '#6366f1'
+          });
         }
       };
 

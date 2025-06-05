@@ -1,13 +1,24 @@
 const Menu = require('../models/menuModel');
 const axios = require('axios');
+require('dotenv').config();
 
-// URL layanan lain (ambil dari .env jika memungkinkan)
-const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:3001';
-// Jika order-service sudah GraphQL, kita akan panggil endpoint GraphQL-nya
+// URL layanan lain
+const USER_SERVICE_GRAPHQL_URL = process.env.USER_SERVICE_GRAPHQL_URL || 'http://localhost:4001/graphql';
 const ORDER_SERVICE_GRAPHQL_URL = process.env.ORDER_SERVICE_GRAPHQL_URL || 'http://localhost:4003/graphql';
 
 class MenuService {
-  static async getAllMenus(token) { // Token mungkin dibutuhkan untuk mengambil orderCount
+  // Helper method untuk memastikan tanggal adalah Date objects
+  static formatMenuDate(menu) {
+    if (!menu) return null;
+    
+    return {
+      ...menu,
+      created_at: menu.created_at ? new Date(menu.created_at) : new Date(),
+      updated_at: menu.updated_at ? new Date(menu.updated_at) : new Date()
+    };
+  }
+
+  static async getAllMenus(token) {
     return new Promise((resolve, reject) => {
       Menu.getAll(async (err, menus) => {
         if (err) {
@@ -16,26 +27,35 @@ class MenuService {
         if (!menus || menus.length === 0) {
           return resolve([]);
         }
-        // Enrich menus with order count
+        
         try {
           const menusWithOrderCount = await Promise.all(
             menus.map(async (menu) => {
               const orderCount = await this.getOrderCountForMenu(menu.id, token);
-              const createdBy = await this.getUserDetails(menu.user_id, token); // Ambil detail user
-              return { ...menu, orderCount: orderCount, createdBy: createdBy };
+              const createdBy = await this.getUserDetails(menu.user_id, token);
+              
+              // Format tanggal sebagai Date objects
+              const formattedMenu = this.formatMenuDate(menu);
+              
+              return { 
+                ...formattedMenu, 
+                orderCount: orderCount, 
+                createdBy: createdBy 
+              };
             })
           );
           resolve(menusWithOrderCount);
         } catch (enrichError) {
           console.error("Error enriching menus:", enrichError);
-          // Resolve dengan data menu dasar jika enrichment gagal
-          resolve(menus.map(menu => ({ ...menu, orderCount: 0, createdBy: null })));
+          // Return menu dengan format tanggal yang benar meskipun enrichment gagal
+          const formattedMenus = menus.map(menu => this.formatMenuDate(menu));
+          resolve(formattedMenus);
         }
       });
     });
   }
 
-  static async getMenuById(id, token) { // Token untuk mengambil detail user
+  static async getMenuById(id, token) {
     return new Promise((resolve, reject) => {
       Menu.getById(id, async (err, results) => {
         if (err) {
@@ -44,38 +64,62 @@ class MenuService {
         if (results.length === 0) {
           return resolve(null);
         }
+        
         const menu = results[0];
         try {
           const orderCount = await this.getOrderCountForMenu(menu.id, token);
           const createdBy = await this.getUserDetails(menu.user_id, token);
-          resolve({ ...menu, orderCount: orderCount, createdBy: createdBy });
+          
+          // Format tanggal sebagai Date objects
+          const formattedMenu = this.formatMenuDate(menu);
+          
+          resolve({ 
+            ...formattedMenu, 
+            orderCount: orderCount, 
+            createdBy: createdBy 
+          });
         } catch (enrichError) {
           console.error(`Error enriching menu ${id}:`, enrichError);
-          resolve({ ...menu, orderCount: 0, createdBy: null });
+          resolve({ 
+            ...this.formatMenuDate(menu), 
+            orderCount: 0, 
+            createdBy: null 
+          });
         }
       });
     });
   }
 
-  static async createMenu(menuData, userId, token) { // Token untuk mengambil detail user
+  static async createMenu(menuData, userId, token) {
     if (!menuData.name || !menuData.price || !userId) {
       throw new Error('Menu name, price, and user ID are required.');
     }
-    const fullMenuData = { ...menuData, user_id: userId };
+    
+    const now = new Date();
+    const fullMenuData = { 
+      ...menuData, 
+      user_id: userId,
+      created_at: now,
+      updated_at: now
+    };
 
     return new Promise(async (resolve, reject) => {
       try {
-        const user = await this.getUserDetails(userId, token); // Ambil detail user yang membuat
+        const user = await this.getUserDetails(userId, token);
         Menu.create(fullMenuData, (err, result) => {
           if (err) {
             return reject(new Error('Failed to create menu in database.'));
           }
-          resolve({
+          
+          const createdMenu = {
             id: result.insertId,
             ...fullMenuData,
-            createdBy: user, // Sertakan user yang membuat
-            orderCount: 0 // Menu baru belum ada order
-          });
+            createdBy: user,
+            orderCount: 0
+          };
+          
+          // Pastikan return Date objects
+          resolve(this.formatMenuDate(createdMenu));
         });
       } catch (error) {
         console.error('Error in MenuService.createMenu:', error.message);
@@ -85,8 +129,7 @@ class MenuService {
   }
 
   static async updateMenu(id, menuData, requestingUserId, token) {
-    // Pertama, cek apakah menu ada dan milik user yang benar
-    const existingMenu = await this.getMenuById(id, token); // getMenuById sudah mengembalikan menu atau null
+    const existingMenu = await this.getMenuById(id, token);
     if (!existingMenu) {
       throw new Error(`Menu with ID ${id} not found.`);
     }
@@ -94,17 +137,24 @@ class MenuService {
       throw new Error('User not authorized to update this menu.');
     }
 
+    // Tambahkan updated_at sebagai Date object
+    const updateData = {
+      ...menuData,
+      updated_at: new Date()
+    };
+
     return new Promise(async (resolve, reject) => {
-      Menu.update(id, menuData, async (err, result) => {
+      Menu.update(id, updateData, async (err, result) => {
         if (err) {
           return reject(new Error(`Failed to update menu ${id} in database.`));
         }
         if (result.affectedRows === 0) {
           return reject(new Error(`Menu with ID ${id} not found for update.`));
         }
-        // Ambil data menu yang sudah diupdate untuk response
-        const updatedMenuWithDetails = await this.getMenuById(id, token);
-        resolve(updatedMenuWithDetails);
+        
+        // Return updated menu dengan Date objects
+        const updatedMenu = await this.getMenuById(id, token);
+        resolve(updatedMenu);
       });
     });
   }
@@ -131,52 +181,58 @@ class MenuService {
     });
   }
 
-  // Helper untuk mengambil jumlah order dari order-service via GraphQL
-  static async getOrderCountForMenu(menuId, token) {
-    try {
-      const graphqlQuery = {
-        query: `
-          query GetOrderCountByMenu($menuId: ID!) {
-            orderCountByMenu(menuId: $menuId) {
-              count
-            }
-          }
-        `,
-        variables: { menuId: menuId.toString() }
-      };
-      const response = await axios.post(ORDER_SERVICE_GRAPHQL_URL, graphqlQuery, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': token }) // Kirim token jika order-service membutuhkannya
-        }
-      });
-      if (response.data.errors) {
-        console.error(`GraphQL errors for order count menu ${menuId}:`, response.data.errors);
-        return 0;
-      }
-      return response.data.data.orderCountByMenu.count || 0;
-    } catch (error) {
-      console.error(`Error fetching order count for menu ${menuId} from OrderService:`, error.message);
-      return 0; // Default jika gagal
-    }
-  }
-
-  // Helper untuk mengambil detail user dari user-service
-  // Asumsi user-service masih REST, jika sudah GraphQL, ini perlu diubah
+  // Helper methods tetap sama...
   static async getUserDetails(userId, token) {
     if (!userId) return null;
     try {
-      // Jika user-service sudah GraphQL, panggil endpoint GraphQL-nya
-      // Untuk sekarang, kita asumsikan user-service masih REST atau akan diupdate nanti
-      const userRes = await axios.get(`${USER_SERVICE_URL}/users/${userId}`, {
-        headers: { ...(token && { 'Authorization': token }) }
+      const response = await axios.post(USER_SERVICE_GRAPHQL_URL, {
+        query: `query GetUser($id: ID!) { user(id: $id) { id name email created_at } }`,
+        variables: { id: userId.toString() }
+      }, { 
+        headers: { 
+          'Content-Type': 'application/json', 
+          ...(token && { 'Authorization': token }) 
+        } 
       });
-      const user = userRes.data;
-      delete user.password;
+      
+      if (response.data.errors) {
+        console.error('GraphQL errors:', response.data.errors);
+        return { id: userId, name: 'Unknown User', email: 'unknown@example.com' };
+      }
+      const user = response.data.data.user || { id: userId, name: 'Unknown User', email: 'unknown@example.com' };
+      
+      // Format user created_at juga sebagai Date object
+      if (user.created_at) {
+        user.created_at = new Date(user.created_at);
+      }
+      
       return user;
     } catch (error) {
-      console.error(`Error fetching user ${userId} from UserService:`, error.message);
-      return { id: userId, name: 'Unknown User (Fetch Error)' }; // Fallback
+      console.error(`Error fetching user ${userId}:`, error.message);
+      return { id: userId, name: 'Unknown User', email: 'unknown@example.com' };
+    }
+  }
+
+  static async getOrderCountForMenu(menuId, token) {
+    try {
+      const response = await axios.post(ORDER_SERVICE_GRAPHQL_URL, {
+        query: `query GetOrderCount($menuId: ID!) { orderCountByMenu(menuId: $menuId) { count } }`,
+        variables: { menuId: menuId.toString() }
+      }, { 
+        headers: { 
+          'Content-Type': 'application/json', 
+          ...(token && { 'Authorization': token }) 
+        } 
+      });
+      
+      if (response.data.errors) {
+        console.error('GraphQL errors:', response.data.errors);
+        return 0;
+      }
+      return response.data.data.orderCountByMenu?.count || 0;
+    } catch (error) {
+      console.error(`Error fetching order count for menu ${menuId}:`, error.message);
+      return 0;
     }
   }
 }
