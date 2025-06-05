@@ -1,6 +1,8 @@
 const { gql } = require('apollo-server-express');
 
 const typeDefs = gql`
+  scalar Date
+
   type Review {
     id: ID!
     user_id: Int!
@@ -8,12 +10,12 @@ const typeDefs = gql`
     order_id: Int!
     rating: Int!
     comment: String
-    sentiment: String # positive, negative, neutral - dari Gemini AI
-    created_at: String
-    updated_at: String
-    user: User # Detail user dari User Service
-    menu: Menu # Detail menu dari Menu Service
-    order: Order # Detail order dari Order Service (opsional)
+    sentiment: String
+    created_at: Date  # Use Date scalar instead of String
+    updated_at: Date  # Use Date scalar instead of String
+    user: User
+    menu: Menu
+    order: Order
   }
 
   type User {

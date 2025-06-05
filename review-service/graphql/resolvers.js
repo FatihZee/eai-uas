@@ -1,7 +1,37 @@
-const { GraphQLError } = require('graphql');
+const { GraphQLError, GraphQLScalarType } = require('graphql');
+const { Kind } = require('graphql/language');
 const ReviewService = require('../services/reviewService');
 
+// Date scalar type resolver
+const DateType = new GraphQLScalarType({
+  name: 'Date',
+  serialize: (value) => {
+    // Convert database timestamp to ISO string
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+    if (typeof value === 'string' || typeof value === 'number') {
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? null : date.toISOString();
+    }
+    return null;
+  },
+  parseValue: (value) => {
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? null : date;
+  },
+  parseLiteral: (ast) => {
+    if (ast.kind === Kind.STRING) {
+      const date = new Date(ast.value);
+      return isNaN(date.getTime()) ? null : date;
+    }
+    return null;
+  }
+});
+
 module.exports = {
+  Date: DateType,
+  
   Query: {
     reviews: async (_, __, context) => {
       try {

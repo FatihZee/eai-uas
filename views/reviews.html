@@ -321,68 +321,53 @@
         });
       }
 
-      // Load orders for review
-      async function loadOrdersForReview() {
+      // FIXED: Helper function untuk format tanggal yang aman
+      function formatDate(dateValue) {
         try {
-          const ordersData = await fetchGraphQL('http://localhost:4003/graphql', `
-            query GetUserOrders($userId: ID!) {
-              ordersByUser(userId: $userId) {
-                id
-                quantity
-                total_price
-                created_at
-                menu {
-                  id
-                  name
-                  price
-                }
-              }
-            }
-          `, { userId: user.id.toString() });
-
-          const ordersContainer = document.getElementById('ordersForReview');
+          if (!dateValue) return 'Unknown date';
           
-          if (ordersData?.ordersByUser?.length > 0) {
-            ordersContainer.innerHTML = ordersData.ordersByUser.map(order => `
-              <div class="order-select-card" data-order-id="${order.id}" data-menu-id="${order.menu.id}">
-                <div class="d-flex justify-content-between align-items-center">
-                  <div>
-                    <h6 class="mb-1">${order.menu.name}</h6>
-                    <small class="text-muted">Order #${order.id} • ${order.quantity}x • Rp ${parseInt(order.total_price).toLocaleString()}</small>
-                  </div>
-                  <small class="text-muted">${new Date(order.created_at).toLocaleDateString()}</small>
-                </div>
-              </div>
-            `).join('');
-
-            // Add click handlers
-            document.querySelectorAll('.order-select-card').forEach(card => {
-              card.addEventListener('click', () => {
-                document.querySelectorAll('.order-select-card').forEach(c => c.classList.remove('selected'));
-                card.classList.add('selected');
-                document.getElementById('selectedOrderId').value = card.dataset.orderId;
-              });
-            });
+          let date;
+          
+          // Handle different date formats
+          if (typeof dateValue === 'string') {
+            // Check if it's a timestamp string (all digits)
+            if (/^\d+$/.test(dateValue)) {
+              // Convert string timestamp to number
+              const timestamp = parseInt(dateValue);
+              // Check if it's in milliseconds (13 digits) or seconds (10 digits)
+              date = timestamp > 9999999999 ? new Date(timestamp) : new Date(timestamp * 1000);
+            } else {
+              // Regular ISO string
+              date = new Date(dateValue);
+            }
+          } else if (typeof dateValue === 'number') {
+            // Check if it's in milliseconds or seconds
+            date = dateValue > 9999999999 ? new Date(dateValue) : new Date(dateValue * 1000);
           } else {
-            ordersContainer.innerHTML = `
-              <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                No orders available to review. Place an order first!
-              </div>
-            `;
+            date = new Date(dateValue);
           }
+          
+          // Check if date is valid
+          if (isNaN(date.getTime())) {
+            console.warn('Invalid date:', dateValue);
+            return 'Invalid date';
+          }
+          
+          // Format date in a readable way
+          return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
         } catch (error) {
-          console.error('Error loading orders:', error);
-          document.getElementById('ordersForReview').innerHTML = `
-            <div class="alert alert-danger">
-              <i class="fas fa-exclamation-triangle me-2"></i>
-              Failed to load orders: ${error.message}
-            </div>
-          `;
+          console.error('Error formatting date:', error, 'Input:', dateValue);
+          return 'Date error';
         }
       }
 
-      // Load reviews with stats
+      // FIXED: Load reviews with proper date formatting
       async function loadReviews() {
         document.getElementById('loadingSpinner').style.display = 'block';
         document.getElementById('reviewsContainer').style.display = 'none';
@@ -415,6 +400,9 @@
           if (reviewsData?.reviews) {
             const reviews = reviewsData.reviews;
             
+            // Debug: Log raw data to see the format
+            console.log('Raw reviews data:', reviews);
+            
             // Update stats
             document.getElementById('totalReviews').textContent = reviews.length;
             
@@ -436,6 +424,15 @@
                 const sentimentIcon = review.sentiment === 'positive' ? 'thumbs-up' : 
                                     review.sentiment === 'negative' ? 'thumbs-down' : 'meh';
 
+                // Use the safe date formatting function
+                const formattedDate = formatDate(review.created_at);
+                
+                // Debug each review date
+                console.log(`Review ${review.id}: ${review.created_at} -> ${formattedDate}`);
+
+                // Safely escape comment for onclick attribute
+                const safeComment = (review.comment || '').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
+
                 return `
                   <div class="review-card p-3 m-3">
                     <div class="d-flex justify-content-between align-items-start mb-2">
@@ -445,7 +442,7 @@
                       </div>
                       <div class="text-end">
                         <div class="rating-stars">${stars}</div>
-                        <small class="text-muted">${new Date(review.created_at).toLocaleDateString()}</small>
+                        <small class="text-muted">${formattedDate}</small>
                       </div>
                     </div>
                     
@@ -458,7 +455,7 @@
                       </span>
                       
                       <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-primary" onclick="editReview('${review.id}', '${review.rating}', '${review.comment || ''}')">
+                        <button class="btn btn-outline-primary" onclick="editReview('${review.id}', '${review.rating}', '${safeComment}')">
                           <i class="fas fa-edit"></i>
                         </button>
                         <button class="btn btn-outline-danger" onclick="deleteReview('${review.id}')">
@@ -483,6 +480,71 @@
           `;
         } finally {
           document.getElementById('loadingSpinner').style.display = 'none';
+        }
+      }
+
+      // ALSO FIX: Load orders for review with proper date formatting
+      async function loadOrdersForReview() {
+        try {
+          const ordersData = await fetchGraphQL('http://localhost:4003/graphql', `
+            query GetUserOrders($userId: ID!) {
+              ordersByUser(userId: $userId) {
+                id
+                quantity
+                total_price
+                created_at
+                menu {
+                  id
+                  name
+                  price
+                }
+              }
+            }
+          `, { userId: user.id.toString() });
+
+          const ordersContainer = document.getElementById('ordersForReview');
+          
+          if (ordersData?.ordersByUser?.length > 0) {
+            ordersContainer.innerHTML = ordersData.ordersByUser.map(order => {
+              const formattedDate = formatDate(order.created_at);
+              
+              return `
+                <div class="order-select-card" data-order-id="${order.id}" data-menu-id="${order.menu.id}">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <h6 class="mb-1">${order.menu.name}</h6>
+                      <small class="text-muted">Order #${order.id} • ${order.quantity}x • Rp ${parseInt(order.total_price).toLocaleString()}</small>
+                    </div>
+                    <small class="text-muted">${formattedDate}</small>
+                  </div>
+                </div>
+              `;
+            }).join('');
+
+            // Add click handlers
+            document.querySelectorAll('.order-select-card').forEach(card => {
+              card.addEventListener('click', () => {
+                document.querySelectorAll('.order-select-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                document.getElementById('selectedOrderId').value = card.dataset.orderId;
+              });
+            });
+          } else {
+            ordersContainer.innerHTML = `
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No orders available to review. Place an order first!
+              </div>
+            `;
+          }
+        } catch (error) {
+          console.error('Error loading orders:', error);
+          document.getElementById('ordersForReview').innerHTML = `
+            <div class="alert alert-danger">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              Failed to load orders: ${error.message}
+            </div>
+          `;
         }
       }
 
@@ -572,7 +634,10 @@
       window.editReview = (id, rating, comment) => {
         document.getElementById("reviewId").value = id;
         document.getElementById("reviewRating").value = rating;
-        document.getElementById("reviewComment").value = comment;
+        document.getElementById("reviewComment").value = comment.replace(/&apos;/g, "'").replace(/&quot;/g, '"'); // Convert back from HTML entities
+
+        // Hide order selection when editing
+        document.getElementById("orderSelectionContainer").style.display = 'none';
 
         // Update star buttons visual state
         const starBtns = document.querySelectorAll('.star-btn');
