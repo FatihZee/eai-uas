@@ -259,52 +259,79 @@
   </div>
 
   <script>
-    const loginForm = document.getElementById("loginForm");
-    loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      
-      const submitBtn = loginForm.querySelector('button[type="submit"]');
-      const originalText = submitBtn.innerHTML;
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Memproses...';
-      
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+  const loginForm = document.getElementById("loginForm");
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    const submitBtn = loginForm.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Memproses...';
+    
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
 
-      try {
-        const res = await fetch("http://localhost:3001/users/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ email, password })
-        });
+    try {
+      // Gunakan GraphQL endpoint di port 4001
+      const res = await fetch("http://localhost:4001/graphql", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          query: `
+            mutation Login($input: LoginInput!) {
+              login(input: $input) {
+                token
+                user {
+                  id
+                  name
+                  email
+                  phone
+                  created_at
+                }
+              }
+            }
+          `,
+          variables: {
+            input: {
+              email: email,
+              password: password
+            }
+          }
+        })
+      });
 
-        const data = await res.json();
-        if (res.ok) {
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("user", JSON.stringify(data.user));
-          
-          submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Berhasil!';
-          submitBtn.classList.remove('btn-login');
-          submitBtn.classList.add('btn-success');
-          
-          setTimeout(() => {
-            window.location.href = "dashboard.html";
-          }, 1000);
-        } else {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = originalText;
-          
-          alert(data.message || "Login gagal.");
-        }
-      } catch (err) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
-        
-        alert("Error saat login: " + err.message);
+      const responseData = await res.json();
+      
+      // Check for GraphQL errors
+      if (responseData.errors) {
+        throw new Error(responseData.errors[0].message);
       }
-    });
+      
+      if (res.ok && responseData.data && responseData.data.login) {
+        const { token, user } = responseData.data.login;
+        
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
+        
+        submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Berhasil!';
+        submitBtn.classList.remove('btn-login');
+        submitBtn.classList.add('btn-success');
+        
+        setTimeout(() => {
+          window.location.href = "dashboard.html";
+        }, 1000);
+      } else {
+        throw new Error("Login response tidak valid");
+      }
+    } catch (err) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalText;
+      
+      alert("Error saat login: " + err.message);
+    }
+  });
   </script>
 </body>
 </html>
