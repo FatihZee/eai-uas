@@ -399,6 +399,30 @@
       const togglePassword = document.getElementById("togglePassword");
       const editPassword = document.getElementById("editPassword");
 
+      // PINDAHKAN fetchGraphQL ke scope global (di luar loadUserData)
+      async function fetchGraphQL(url, query, variables = {}) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ query, variables })
+          });
+          
+          const result = await response.json();
+          if (result.errors) {
+            console.error('GraphQL errors:', result.errors);
+            throw new Error(result.errors.map(e => e.message).join(', '));
+          }
+          return result.data;
+        } catch (error) {
+          console.error('GraphQL request failed:', error);
+          throw error;
+        }
+      }
+
       // Toggle password visibility
       togglePassword.addEventListener('click', function() {
         const type = editPassword.getAttribute('type') === 'password' ? 'text' : 'password';
@@ -450,14 +474,92 @@
 
       async function loadUserData() {
         try {
-          const res = await fetch(`http://localhost:3001/users/${user.id}/with-orders-reviews`);
-          if (!res.ok) throw new Error('Failed to load user data');
-          
-          const data = await res.json();
-          renderUserInfo(data.user);
-          
-          if (data.orders && data.orders.length > 0) {
-            userHistory.innerHTML = data.orders.map(o => `
+          console.log('Loading user data for user ID:', user.id);
+
+          // HAPUS definisi fetchGraphQL dari sini karena sudah dipindah ke scope global
+
+          // Get user basic info via GraphQL
+          const userData = await fetchGraphQL('http://localhost:4001/graphql', `
+            query GetUser($id: ID!) {
+              user(id: $id) {
+                id
+                name
+                email
+                phone
+                created_at
+              }
+            }
+          `, { id: user.id.toString() });
+
+          if (!userData?.user) {
+            throw new Error('User not found');
+          }
+
+          console.log('User data loaded:', userData.user);
+          renderUserInfo(userData.user);
+
+          // Get user orders via GraphQL
+          let orders = [];
+          try {
+            const orderData = await fetchGraphQL('http://localhost:4003/graphql', `
+              query GetOrdersByUser($userId: ID!) {
+                ordersByUser(userId: $userId) {
+                  id
+                  menu_id
+                  quantity
+                  total_price
+                  created_at
+                  menu {
+                    id
+                    name
+                    price
+                  }
+                }
+              }
+            `, { userId: user.id.toString() });
+
+            orders = orderData?.ordersByUser || [];
+            console.log('Orders loaded:', orders);
+          } catch (error) {
+            console.warn('Failed to load orders:', error.message);
+          }
+
+          // Get user reviews for each order via GraphQL
+          const ordersWithReviews = await Promise.all(
+            orders.map(async (order) => {
+              try {
+                const reviewData = await fetchGraphQL('http://localhost:4004/graphql', `
+                  query GetReviewsByOrder($orderId: ID!) {
+                    reviewsByOrder(orderId: $orderId) {
+                      id
+                      rating
+                      comment
+                      sentiment
+                      created_at
+                    }
+                  }
+                `, { orderId: order.id.toString() });
+
+                return {
+                  ...order,
+                  menu_name: order.menu?.name || 'Unknown Menu',
+                  reviews: reviewData?.reviewsByOrder || []
+                };
+              } catch (error) {
+                console.warn(`Failed to load reviews for order ${order.id}:`, error.message);
+                return {
+                  ...order,
+                  menu_name: order.menu?.name || 'Unknown Menu',
+                  reviews: []
+                };
+              }
+            })
+          );
+
+          console.log('Orders with reviews:', ordersWithReviews);
+
+          if (ordersWithReviews && ordersWithReviews.length > 0) {
+            userHistory.innerHTML = ordersWithReviews.map(o => `
               <div class="col-md-6 col-lg-4 animate__animated animate__fadeIn">
                 <div class="order-card card shadow-sm h-100">
                   <div class="order-header">
@@ -482,6 +584,7 @@
                           ${displayStarRating(r.rating)}
                         </div>
                         <p class="card-text mb-0">${r.comment}</p>
+                        ${r.sentiment ? `<small class="text-muted">Sentiment: ${r.sentiment}</small>` : ''}
                       </div>
                     `).join('') : `
                       <p class="text-center text-muted my-3">
@@ -508,7 +611,7 @@
             <div class="text-center py-5">
               <i class="fas fa-exclamation-circle fa-3x text-danger mb-3"></i>
               <h4>Failed to load profile data</h4>
-              <p>Please try refreshing the page</p>
+              <p class="text-muted">${error.message}</p>
               <button class="btn btn-custom-primary mt-3" onclick="window.location.reload()">
                 <i class="fas fa-sync me-1"></i>Refresh
               </button>
@@ -517,6 +620,7 @@
         }
       }
 
+      // Edit form event listener - fetchGraphQL sekarang sudah accessible
       editForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         saveButton.disabled = true;
@@ -527,30 +631,40 @@
         const phone = document.getElementById("editPhone").value;
         const password = document.getElementById("editPassword").value;
 
-        const body = { name, email, phone };
-        if (password) body.password = password;
+        const input = { name, email, phone };
+        if (password) input.password = password;
 
         try {
-          const res = await fetch(`http://localhost:3001/users/${user.id}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: "Bearer " + token
-            },
-            body: JSON.stringify(body)
+          // Sekarang fetchGraphQL sudah bisa diakses
+          const result = await fetchGraphQL('http://localhost:4001/graphql', `
+            mutation UpdateUser($id: ID!, $input: UpdateUserInput!) {
+              updateUser(id: $id, input: $input) {
+                message
+                user {
+                  id
+                  name
+                  email
+                  phone
+                }
+              }
+            }
+          `, { 
+            id: user.id.toString(),
+            input: input
           });
 
-          if (res.ok) {
-            localStorage.setItem("user", JSON.stringify({ ...user, name, email, phone }));
+          if (result?.updateUser) {
+            const updatedUser = result.updateUser.user;
+            localStorage.setItem("user", JSON.stringify(updatedUser));
             editModal.hide();
             loadUserData();
             showToast("Profile updated successfully!");
           } else {
-            alert("Failed to update profile. Please try again.");
+            throw new Error('Update failed');
           }
         } catch (error) {
           console.error('Error updating profile:', error);
-          alert("An error occurred. Please try again later.");
+          alert(`Failed to update profile: ${error.message}`);
         } finally {
           saveButton.disabled = false;
           saveSpinner.style.display = 'none';
@@ -561,28 +675,30 @@
         deleteConfirmModal.show();
       };
 
+      // Delete account function - fetchGraphQL sekarang sudah bisa diakses
       window.deleteMyAccount = async () => {
         try {
-          const res = await fetch(`http://localhost:3001/users/${user.id}`, {
-            method: "DELETE",
-            headers: {
-              Authorization: "Bearer " + token
+          const result = await fetchGraphQL('http://localhost:4001/graphql', `
+            mutation DeleteUser($id: ID!) {
+              deleteUser(id: $id) {
+                message
+                id
+              }
             }
-          });
-          
-          if (res.ok) {
+          `, { id: user.id.toString() });
+
+          if (result?.deleteUser) {
             showToast("Account deleted successfully!");
             setTimeout(() => {
               localStorage.clear();
               window.location.href = "index.html";
             }, 1500);
           } else {
-            alert("Failed to delete account. Please try again.");
-            deleteConfirmModal.hide();
+            throw new Error('Delete failed');
           }
         } catch (error) {
           console.error('Error deleting account:', error);
-          alert("An error occurred. Please try again later.");
+          alert(`Failed to delete account: ${error.message}`);
           deleteConfirmModal.hide();
         }
       };

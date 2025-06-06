@@ -543,6 +543,10 @@
       }
 
       // Fungsi untuk memuat daftar pesanan menggunakan GraphQL
+      
+// ...existing code...
+
+      // Fungsi untuk memuat daftar pesanan menggunakan GraphQL
       async function loadOrders() {
         loadingSpinner.style.display = "flex";
         orderList.style.display = "none";
@@ -575,7 +579,47 @@
           if (!orders || orders.length === 0) {
             emptyState.style.display = "block";
           } else {
-            orderList.innerHTML = orders.map(order => `
+            // Check payment status for each order
+            const ordersWithPaymentStatus = await Promise.all(
+              orders.map(async (order) => {
+                try {
+                  // Check if order has been paid
+                  const paymentData = await fetchGraphQL(`
+                    query GetPaymentsByOrder($orderId: ID!) {
+                      paymentsByOrder(orderId: $orderId) {
+                        id
+                        status
+                        redirect_url
+                        transaction_time
+                        amount
+                        payment_method
+                      }
+                    }
+                  `, { orderId: order.id.toString() }, "http://localhost:4005/graphql");
+
+                  const payments = paymentData?.paymentsByOrder || [];
+                  const paidPayment = payments.find(p => p.status === 'paid');
+                  const pendingPayment = payments.find(p => p.status === 'pending');
+                  
+                  return {
+                    ...order,
+                    hasPaidPayment: !!paidPayment,
+                    hasPendingPayment: !!pendingPayment,
+                    latestPayment: paidPayment || pendingPayment || null
+                  };
+                } catch (error) {
+                  console.log(`No payment found for order ${order.id}`);
+                  return {
+                    ...order,
+                    hasPaidPayment: false,
+                    hasPendingPayment: false,
+                    latestPayment: null
+                  };
+                }
+              })
+            );
+
+            orderList.innerHTML = ordersWithPaymentStatus.map(order => `
               <div class="col-md-6 col-lg-4 mb-4 animate__animated animate__fadeInUp">
                 <div class="card order-card h-100">
                   <div class="card-body">
@@ -583,7 +627,22 @@
                       <h5 class="card-title text-primary">
                         <i class="fas fa-utensils me-2"></i>Order #${order.id}
                       </h5>
-                      <span class="badge bg-primary">${order.quantity}x</span>
+                      <div class="d-flex flex-column align-items-end">
+                        <span class="badge bg-primary mb-1">${order.quantity}x</span>
+                        ${order.hasPaidPayment ? `
+                          <span class="badge bg-success">
+                            <i class="fas fa-check me-1"></i>PAID
+                          </span>
+                        ` : order.hasPendingPayment ? `
+                          <span class="badge bg-warning">
+                            <i class="fas fa-clock me-1"></i>PENDING
+                          </span>
+                        ` : `
+                          <span class="badge bg-secondary">
+                            <i class="fas fa-credit-card me-1"></i>UNPAID
+                          </span>
+                        `}
+                      </div>
                     </div>
                     
                     <div class="order-details mb-3">
@@ -600,18 +659,54 @@
                       <p class="text-muted mb-0">
                         <small><i class="fas fa-calendar me-1"></i>${new Date(order.created_at).toLocaleDateString()}</small>
                       </p>
+                      ${order.latestPayment ? `
+                        <p class="text-muted mb-0">
+                          <small>
+                            <i class="fas fa-credit-card me-1"></i>
+                            Payment: ${order.latestPayment.status.toUpperCase()}
+                            ${order.latestPayment.transaction_time ? ` - ${new Date(order.latestPayment.transaction_time).toLocaleDateString()}` : ''}
+                          </small>
+                        </p>
+                      ` : ''}
                     </div>
                     
                     <div class="d-flex gap-2">
-                      <button class="btn btn-primary btn-sm flex-fill edit-btn" onclick="editOrder(${order.id}, ${order.menu_id}, ${order.quantity})">
+                      <!-- Edit & Delete buttons - disabled for paid orders -->
+                      <button class="btn btn-primary btn-sm flex-fill edit-btn" 
+                              onclick="editOrder(${order.id}, ${order.menu_id}, ${order.quantity})" 
+                              ${order.hasPaidPayment ? 'disabled title="Cannot edit paid order"' : ''}>
                         <i class="fas fa-edit me-1"></i>Edit
                       </button>
-                      <button class="btn btn-danger btn-sm flex-fill" onclick="deleteOrder(${order.id})">
+                      <button class="btn btn-danger btn-sm flex-fill" 
+                              onclick="deleteOrder(${order.id})" 
+                              ${order.hasPaidPayment ? 'disabled title="Cannot delete paid order"' : ''}>
                         <i class="fas fa-trash me-1"></i>Delete
                       </button>
-                      <button class="btn btn-success btn-sm flex-fill" onclick="createPaymentForOrder(${order.id})">
-                        <i class="fas fa-credit-card me-1"></i>Pay
-                      </button>
+                      
+                      <!-- Payment button logic -->
+                      ${order.hasPaidPayment ? `
+                        <!-- Order sudah dibayar -->
+                        <button class="btn btn-success btn-sm flex-fill" disabled>
+                          <i class="fas fa-check me-1"></i>PAID
+                        </button>
+                      ` : order.hasPendingPayment ? `
+                        <!-- Ada pembayaran pending -->
+                        <div class="d-flex gap-1 flex-fill">
+                          <button class="btn btn-warning btn-sm flex-fill" onclick="checkPaymentStatus('${order.latestPayment.id}')">
+                            <i class="fas fa-sync me-1"></i>Check Status
+                          </button>
+                          ${order.latestPayment.redirect_url ? `
+                            <button class="btn btn-info btn-sm" onclick="window.open('${order.latestPayment.redirect_url}', '_blank')" title="Continue Payment">
+                              <i class="fas fa-external-link-alt"></i>
+                            </button>
+                          ` : ''}
+                        </div>
+                      ` : `
+                        <!-- Belum ada pembayaran -->
+                        <button class="btn btn-success btn-sm flex-fill" onclick="createPaymentForOrder(${order.id})">
+                          <i class="fas fa-credit-card me-1"></i>PAY
+                        </button>
+                      `}
                     </div>
                   </div>
                 </div>
@@ -623,7 +718,7 @@
           console.error("Error loading orders via GraphQL:", error);
           emptyState.style.display = "block";
           emptyState.innerHTML = `
-            <i class="fas fa-exclamation-triangle text-danger"></i>
+            <i class="fas fa-exclamation-triangle text-danger fa-4x mb-3"></i>
             <h4>Error Loading Orders</h4>
             <p class="text-muted">${error.message}. Please try again later.</p>
           `;
@@ -631,7 +726,9 @@
           loadingSpinner.style.display = "none";
         }
       }
-      
+
+// ...existing code...
+
       // Reset modal when opening for new order
       orderModalEl.addEventListener('show.bs.modal', function (event) {
         // Check if the modal was triggered by an edit button
