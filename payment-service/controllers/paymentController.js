@@ -126,6 +126,10 @@ exports.getPaymentsByOrderId = async (req, res) => {
 
 exports.handleMidtransWebhook = async (req, res) => {
   try {
+    console.log('🔔 Webhook received at:', new Date().toISOString());
+    console.log('📨 Request headers:', JSON.stringify(req.headers, null, 2));
+    console.log('📦 Request body:', JSON.stringify(req.body, null, 2));
+    
     const notification = req.body;
     console.log('Midtrans notification received:', notification);
 
@@ -149,9 +153,26 @@ exports.handleMidtransWebhook = async (req, res) => {
       .update(order_id + status_code + gross_amount + serverKey)
       .digest('hex');
 
-    if (hash !== signature_key) {
-      console.error('Invalid signature from Midtrans');
+    console.log('🔐 Signature verification:');
+    console.log('- Order ID:', order_id);
+    console.log('- Status Code:', status_code);
+    console.log('- Gross Amount:', gross_amount);
+    console.log('- Server Key:', serverKey ? '***SET***' : 'NOT SET');
+    console.log('- Signature String:', order_id + status_code + gross_amount + serverKey);
+    console.log('- Received signature:', signature_key);
+    console.log('- Calculated signature:', hash);
+    console.log('- Match:', hash === signature_key);
+
+    // Skip signature verification for testing (ONLY in development)
+    const isTestingMode = process.env.NODE_ENV !== 'production' && signature_key === 'test-signature';
+    
+    if (!isTestingMode && hash !== signature_key) {
+      console.error('❌ Invalid signature from Midtrans');
       return res.status(400).json({ message: 'Invalid signature' });
+    }
+
+    if (isTestingMode) {
+      console.log('⚠️ Running in TESTING MODE - Signature verification bypassed');
     }
 
     // Find payment by midtrans_order_id
@@ -160,13 +181,25 @@ exports.handleMidtransWebhook = async (req, res) => {
     });
 
     if (!payment) {
-      console.error(`Payment not found for order_id: ${order_id}`);
+      console.error(`❌ Payment not found for order_id: ${order_id}`);
       return res.status(404).json({ message: 'Payment not found' });
     }
 
-    let newStatus = payment.status; // Default to current status
+    console.log('💳 Found payment:', {
+      id: payment.id,
+      current_status: payment.status,
+      amount: payment.amount
+    });
 
-    // Determine new status based on transaction_status
+    let newStatus = payment.status;
+    let updateData = {
+      payment_method: payment_type || payment.payment_method,
+      transaction_time: transaction_time ? new Date(transaction_time) : new Date()
+    };
+
+    // Determine new status based on transaction_status - IMPROVED LOGIC
+    console.log('📊 Processing transaction status:', transaction_status);
+    
     if (transaction_status === 'capture') {
       if (fraud_status === 'challenge') {
         newStatus = 'pending';
@@ -175,32 +208,44 @@ exports.handleMidtransWebhook = async (req, res) => {
       }
     } else if (transaction_status === 'settlement') {
       newStatus = 'paid';
-    } else if (transaction_status === 'cancel' || 
-               transaction_status === 'deny' || 
-               transaction_status === 'expire') {
-      newStatus = 'failed';
     } else if (transaction_status === 'pending') {
       newStatus = 'pending';
+    } else if (transaction_status === 'cancel' || 
+               transaction_status === 'deny' || 
+               transaction_status === 'expire' ||
+               transaction_status === 'failure') {
+      newStatus = 'failed';
     }
 
-    // Update payment status
-    await payment.update({
-      status: newStatus,
-      payment_method: payment_type || payment.payment_method,
-      transaction_time: transaction_time ? new Date(transaction_time) : payment.transaction_time
+    console.log('🔄 Status update:', {
+      from: payment.status,
+      to: newStatus,
+      will_update: newStatus !== payment.status
     });
 
-    console.log(`Payment ${payment.id} status updated to: ${newStatus}`);
+    // Only update if status actually changed
+    if (newStatus !== payment.status) {
+      updateData.status = newStatus;
+      await payment.update(updateData);
+      
+      console.log(`✅ Payment ${payment.id} status updated from ${payment.status} to: ${newStatus}`);
+      console.log(`💰 Transaction details: ${transaction_status}, Payment method: ${payment_type}`);
+    } else {
+      console.log(`ℹ️ Payment ${payment.id} status unchanged: ${newStatus}`);
+    }
 
     // Send success response to Midtrans
     res.status(200).json({ 
       message: 'Notification processed successfully',
       payment_id: payment.id,
-      new_status: newStatus
+      old_status: payment.status,
+      new_status: newStatus,
+      transaction_status: transaction_status,
+      testing_mode: isTestingMode
     });
 
   } catch (error) {
-    console.error('Error processing Midtrans webhook:', error);
+    console.error('❌ Error processing Midtrans webhook:', error);
     res.status(500).json({ 
       error: 'Failed to process webhook', 
       detail: error.message 
@@ -250,6 +295,40 @@ exports.checkPaymentStatus = async (req, res) => {
 
   } catch (error) {
     console.error('Error checking payment status:', error);
+    res.status(500).json({ 
+      error: 'Failed to check payment status', 
+      detail: error.message 
+    });
+  }
+};
+
+exports.getPaymentStatusByOrderId = async (req, res) => {
+  const orderId = req.params.orderId;
+  
+  try {
+    const payment = await Payment.findOne({
+      where: { order_id: orderId },
+      order: [['transaction_time', 'DESC']] // Get latest payment for this order
+    });
+
+    if (!payment) {
+      return res.status(404).json({ 
+        message: 'No payment found for this order',
+        has_paid: false 
+      });
+    }
+
+    res.json({
+      payment_id: payment.id,
+      order_id: orderId,
+      status: payment.status,
+      has_paid: payment.status === 'paid',
+      amount: payment.amount,
+      transaction_time: payment.transaction_time
+    });
+
+  } catch (error) {
+    console.error('Error checking payment status by order:', error);
     res.status(500).json({ 
       error: 'Failed to check payment status', 
       detail: error.message 

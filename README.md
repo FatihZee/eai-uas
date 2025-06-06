@@ -92,6 +92,7 @@ npm run dev
 ```
 
 Lakukan hal yang sama untuk:
+
 - `menu-service`
 - `order-service`
 - `review-service`
@@ -123,6 +124,7 @@ npm run dev
 ```
 
 Perintah ini akan secara otomatis:
+
 - Masuk ke tiap folder service
 - Menjalankan `npm run dev` di masing-masing service
 - Semua berjalan paralel menggunakan package `concurrently`
@@ -131,7 +133,7 @@ Perintah ini akan secara otomatis:
 
 # 🍽 EAI Microservices SQL Setup
 
-Sebelum menjalankan aplikasi, **pastikan kamu sudah membuat database dan tabelnya terlebih dahulu.**  
+Sebelum menjalankan aplikasi, **pastikan kamu sudah membuat database dan tabelnya terlebih dahulu.**
 Setiap microservice menggunakan database yang berbeda dengan format nama:
 
 ```
@@ -139,6 +141,7 @@ eai_<nama_service>
 ```
 
 Contoh:
+
 - `eai_user_service`
 - `eai_menu_service`
 - `eai_order_service`
@@ -208,7 +211,7 @@ CREATE TABLE `orders` (
   `quantity` int NOT NULL,
   `total_price` decimal(10,2) NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 ```
@@ -234,6 +237,24 @@ CREATE TABLE `reviews` (
   KEY `order_id` (`order_id`),
   CONSTRAINT `reviews_chk_1` CHECK ((`rating` between 1 and 5))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
+
+#### ⭐ Payment Service (`eai_payment_service`)
+```sql
+USE eai_payment_service;
+CREATE TABLE payments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    order_id INT NOT NULL,
+    midtrans_order_id VARCHAR(50) NOT NULL UNIQUE,
+    amount DECIMAL(12, 2) NOT NULL,
+    payment_method VARCHAR(50),
+    status ENUM('pending', 'paid', 'failed', 'cancelled') DEFAULT 'pending',
+    snap_token TEXT,
+    redirect_url TEXT,
+    transaction_time DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 ```
 
 ---
@@ -264,7 +285,7 @@ Setelah berhasil, koleksi bernama **Z-UTS-EAI** akan muncul di sidebar kiri.
 
 ### 🛡️ Catatan tentang Environment
 
-Environment ini berisi **variabel `token`** yang digunakan untuk menyimpan JWT token hasil login. Token ini akan secara otomatis dimasukkan ke header `Authorization` saat mengakses endpoint yang membutuhkan autentikasi.  
+Environment ini berisi **variabel `token`** yang digunakan untuk menyimpan JWT token hasil login. Token ini akan secara otomatis dimasukkan ke header `Authorization` saat mengakses endpoint yang membutuhkan autentikasi.
 
 Jadi kamu hanya perlu login satu kali, lalu token-nya bisa digunakan untuk request lain secara otomatis tanpa perlu tempel ulang manual.
 
@@ -280,10 +301,11 @@ Jadi kamu hanya perlu login satu kali, lalu token-nya bisa digunakan untuk reque
 
 ### POST `/users/login`
 
-**Deskripsi:**  
+**Deskripsi:**
 Login user berdasarkan email dan password.
 
 **Request Body:**
+
 ```json
 {
   "email": "fatih@example.com",
@@ -292,6 +314,7 @@ Login user berdasarkan email dan password.
 ```
 
 **Response:**
+
 ```json
 {
     "message": "Login successful",
@@ -309,10 +332,11 @@ Login user berdasarkan email dan password.
 
 ### POST `/users/register`
 
-**Deskripsi:**  
+**Deskripsi:**
 Register / daftar user baru.
 
 **Request Body:**
+
 ```json
 {
   "name": "Fatih Fikry Oktavianto",
@@ -323,6 +347,7 @@ Register / daftar user baru.
 ```
 
 **Response:**
+
 ```json
 {
     "id": 2,
@@ -336,10 +361,11 @@ Register / daftar user baru.
 
 ### GET `/users/`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil seluruh data user.
 
 **Response:**
+
 ```json
 [
     {
@@ -358,13 +384,15 @@ Mengambil seluruh data user.
 
 ### GET `/users/:id`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil data user berdasarkan ID.
 
 **Params:**
+
 - `id` – ID user (integer)
 
 **Response:**
+
 ```json
 {
     "id": 2,
@@ -381,19 +409,22 @@ Mengambil data user berdasarkan ID.
 
 ### PUT `/users/:id`
 
-**Deskripsi:**  
-Mengupdate data user berdasarkan ID.  
+**Deskripsi:**
+Mengupdate data user berdasarkan ID.
 **(Protected route - butuh token)**
 
 **Headers:**
+
 ```http
 Authorization: Bearer <token>
 ```
 
 **Params:**
+
 - `id` – ID user (integer)
 
 **Request Body:**
+
 ```json
 {
   "name": "Fatih Fikry Oktavianto",
@@ -404,6 +435,7 @@ Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "message": "User updated successfully"
@@ -414,19 +446,22 @@ Authorization: Bearer <token>
 
 ### DELETE `/users/:id`
 
-**Deskripsi:**  
-Menghapus user berdasarkan ID.  
+**Deskripsi:**
+Menghapus user berdasarkan ID.
 **(Protected route - butuh token)**
 
 **Headers:**
+
 ```http
 Authorization: Bearer <token>
 ```
 
 **Params:**
+
 - `id` – ID user (integer)
 
 **Response:**
+
 ```json
 {
   "message": "User deleted successfully"
@@ -437,13 +472,15 @@ Authorization: Bearer <token>
 
 ### GET `/users/:id/with-orders-reviews`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil data lengkap user beserta daftar order dan review yang pernah dibuat.
 
 **Params:**
+
 - `id` – ID user (integer)
 
 **Response:**
+
 ```json
 {
     "user": {
@@ -478,6 +515,7 @@ Mengambil data lengkap user beserta daftar order dan review yang pernah dibuat.
 ---
 
 ### 🍔 Menu Service
+
 Berikut dokumentasi lengkap untuk **Menu Service** berdasarkan route yang kamu kasih:
 
 ---
@@ -490,16 +528,18 @@ Berikut dokumentasi lengkap untuk **Menu Service** berdasarkan route yang kamu k
 
 ### POST `/menus/`
 
-**Deskripsi:**  
-Menambahkan menu baru ke dalam sistem.  
+**Deskripsi:**
+Menambahkan menu baru ke dalam sistem.
 **(Protected route - butuh token)**
 
 **Headers:**
+
 ```http
 Authorization: Bearer <token>
 ```
 
 **Request Body:**
+
 ```json
 {
   "name": "Nasi Goreng Jawa",
@@ -509,6 +549,7 @@ Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
     "message": "Menu created successfully",
@@ -529,19 +570,22 @@ Authorization: Bearer <token>
 
 ### PUT `/menus/:id`
 
-**Deskripsi:**  
-Mengupdate data menu berdasarkan ID.  
+**Deskripsi:**
+Mengupdate data menu berdasarkan ID.
 **(Protected route - butuh token)**
 
 **Headers:**
+
 ```http
 Authorization: Bearer <token>
 ```
 
 **Params:**
+
 - `id` – ID menu (integer)
 
 **Request Body:**
+
 ```json
 {
   "name": "Nasi Goreng Spesial Gila",
@@ -551,6 +595,7 @@ Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Menu updated successfully"
@@ -561,19 +606,22 @@ Authorization: Bearer <token>
 
 ### DELETE `/menus/:id`
 
-**Deskripsi:**  
-Menghapus menu berdasarkan ID.  
+**Deskripsi:**
+Menghapus menu berdasarkan ID.
 **(Protected route - butuh token)**
 
 **Headers:**
+
 ```http
 Authorization: Bearer <token>
 ```
 
 **Params:**
+
 - `id` – ID menu (integer)
 
 **Response:**
+
 ```json
 {
   "message": "Menu deleted successfully"
@@ -584,10 +632,11 @@ Authorization: Bearer <token>
 
 ### GET `/menus/`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil seluruh daftar menu.
 
 **Response:**
+
 ```json
 [
     {
@@ -607,13 +656,15 @@ Mengambil seluruh daftar menu.
 
 ### GET `/menus/:id`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil informasi menu berdasarkan ID.
 
 **Params:**
+
 - `id` – ID menu (integer)
 
 **Response:**
+
 ```json
 {
     "id": 3,
@@ -629,6 +680,7 @@ Mengambil informasi menu berdasarkan ID.
 ---
 
 ### 📦 Order Service
+
 Berikut dokumentasi lengkap untuk **Order Service** berdasarkan route yang kamu kasih:
 
 ---
@@ -641,10 +693,11 @@ Berikut dokumentasi lengkap untuk **Order Service** berdasarkan route yang kamu 
 
 ### GET `/orders/`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil seluruh data pesanan.
 
 **Response:**
+
 ```json
 [
     {
@@ -663,13 +716,15 @@ Mengambil seluruh data pesanan.
 
 ### GET `/orders/:id`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil data pesanan berdasarkan ID pesanan.
 
 **Params:**
+
 - `id` – ID pesanan (integer)
 
 **Response:**
+
 ```json
 {
     "id": 4,
@@ -685,16 +740,18 @@ Mengambil data pesanan berdasarkan ID pesanan.
 
 ### POST `/orders/`
 
-**Deskripsi:**  
-Membuat pesanan baru.  
+**Deskripsi:**
+Membuat pesanan baru.
 **(Protected route - butuh token)**
 
 **Headers:**
+
 ```http
 Authorization: Bearer <token>
 ```
 
 **Request Body:**
+
 ```json
 {
   "menuId": 3,
@@ -703,6 +760,7 @@ Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
     "message": "Order created successfully",
@@ -737,19 +795,22 @@ Authorization: Bearer <token>
 
 ### PUT `/orders/:id`
 
-**Deskripsi:**  
-Mengupdate data pesanan berdasarkan ID.  
+**Deskripsi:**
+Mengupdate data pesanan berdasarkan ID.
 **(Protected route - butuh token)**
 
 **Headers:**
+
 ```http
 Authorization: Bearer <token>
 ```
 
 **Params:**
+
 - `id` – ID pesanan (integer)
 
 **Request Body:**
+
 ```json
 {
   "menuId": 1,
@@ -758,6 +819,7 @@ Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
     "message": "Order updated successfully",
@@ -792,19 +854,22 @@ Authorization: Bearer <token>
 
 ### DELETE `/orders/:id`
 
-**Deskripsi:**  
-Menghapus pesanan berdasarkan ID.  
+**Deskripsi:**
+Menghapus pesanan berdasarkan ID.
 **(Protected route - butuh token)**
 
 **Headers:**
+
 ```http
 Authorization: Bearer <token>
 ```
 
 **Params:**
+
 - `id` – ID pesanan (integer)
 
 **Response:**
+
 ```json
 {
   "message": "Order deleted successfully"
@@ -815,13 +880,15 @@ Authorization: Bearer <token>
 
 ### GET `/orders/user/:userId`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil semua pesanan berdasarkan ID pengguna.
 
 **Params:**
+
 - `userId` – ID user (integer)
 
 **Response:**
+
 ```json
 [
     {
@@ -840,13 +907,15 @@ Mengambil semua pesanan berdasarkan ID pengguna.
 
 ### GET `/orders/menu/:menuId`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil jumlah pesanan untuk menu tertentu.
 
 **Params:**
+
 - `menuId` – ID menu (integer)
 
 **Response:**
+
 ```json
 {
     "count": 1
@@ -856,6 +925,7 @@ Mengambil jumlah pesanan untuk menu tertentu.
 ---
 
 ### ⭐ Review Service
+
 Berikut dokumentasi lengkap untuk **Review Service** berdasarkan route yang kamu kasih:
 
 ---
@@ -868,10 +938,11 @@ Berikut dokumentasi lengkap untuk **Review Service** berdasarkan route yang kamu
 
 ### GET `/reviews/`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil seluruh ulasan (review).
 
 **Response:**
+
 ```json
 [
     {
@@ -936,13 +1007,15 @@ Mengambil seluruh ulasan (review).
 
 ### GET `/reviews/:id`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil review berdasarkan ID.
 
 **Params:**
+
 - `id` – ID review (integer)
 
 **Response:**
+
 ```json
 {
     "id": 3,
@@ -985,13 +1058,15 @@ Mengambil review berdasarkan ID.
 
 ### GET `/reviews/menu/:menuId`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil seluruh review untuk menu tertentu.
 
 **Params:**
+
 - `menuId` – ID menu (integer)
 
 **Response:**
+
 ```json
 {
     "menu": {
@@ -1032,13 +1107,15 @@ Mengambil seluruh review untuk menu tertentu.
 
 ### GET `/reviews/user/:userId`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil semua review yang dibuat oleh user tertentu.
 
 **Params:**
+
 - `userId` – ID user (integer)
 
 **Response:**
+
 ```json
 {
     "user": {
@@ -1077,13 +1154,15 @@ Mengambil semua review yang dibuat oleh user tertentu.
 
 ### GET `/reviews/stats/menu/:menuId`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil statistik review (misalnya rata-rata rating) untuk sebuah menu.
 
 **Params:**
+
 - `menuId` – ID menu (integer)
 
 **Response:**
+
 ```json
 {
     "menuId": "3",
@@ -1096,16 +1175,18 @@ Mengambil statistik review (misalnya rata-rata rating) untuk sebuah menu.
 
 ### POST `/reviews/`
 
-**Deskripsi:**  
-Menambahkan review baru.  
+**Deskripsi:**
+Menambahkan review baru.
 **(Protected route - butuh token)**
 
 **Headers:**
+
 ```http
 Authorization: Bearer <token>
 ```
 
 **Request Body:**
+
 ```json
 {
   "orderId": 4,
@@ -1115,6 +1196,7 @@ Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
     "message": "Review created successfully",
@@ -1134,19 +1216,22 @@ Authorization: Bearer <token>
 
 ### PUT `/reviews/:id`
 
-**Deskripsi:**  
-Mengupdate review berdasarkan ID.  
+**Deskripsi:**
+Mengupdate review berdasarkan ID.
 **(Protected route - butuh token)**
 
 **Headers:**
+
 ```http
 Authorization: Bearer <token>
 ```
 
 **Params:**
+
 - `id` – ID review (integer)
 
 **Request Body:**
+
 ```json
 {
   "orderId": 4,
@@ -1156,6 +1241,7 @@ Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
     "message": "Review updated successfully"
@@ -1166,38 +1252,42 @@ Authorization: Bearer <token>
 
 ### DELETE `/reviews/:id`
 
-**Deskripsi:**  
-Menghapus review berdasarkan ID.  
+**Deskripsi:**
+Menghapus review berdasarkan ID.
 **(Protected route - butuh token)**
 
 **Headers:**
+
 ```http
 Authorization: Bearer <token>
 ```
 
 **Params:**
+
 - `id` – ID review (integer)
 
 **Response:**
+
 ```json
 {
   "message": "Review deleted successfully"
 }
 ```
 
-
 ---
 
 ### GET `/menus/:menuId/reviews/sentiment/:sentiment`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil daftar review berdasarkan `menuId` dan `sentiment` tertentu (misalnya positif, negatif, atau netral).
 
 **Params:**
+
 - `menuId` – ID menu (integer)
 - `sentiment` – Sentimen review (`positive`, `negative`, `neutral`)
 
 **Response:**
+
 ```json
 {
     "menuId": "3",
@@ -1231,13 +1321,15 @@ Mengambil daftar review berdasarkan `menuId` dan `sentiment` tertentu (misalnya 
 
 ### GET `/menus/:menuId/sentiment-stats`
 
-**Deskripsi:**  
+**Deskripsi:**
 Mengambil statistik jumlah review berdasarkan sentimen untuk sebuah menu.
 
 **Params:**
+
 - `menuId` – ID menu (integer)
 
 **Response:**
+
 ```json
 {
     "menuId": "3",
@@ -1258,7 +1350,7 @@ Mengambil statistik jumlah review berdasarkan sentimen untuk sebuah menu.
 
 ### 📦 `sentimentAnalyzer.js`
 
-**Deskripsi:**  
+**Deskripsi:**
 Modul ini menggunakan _Natural Language Processing (NLP)_ dengan pustaka `node-nlp` untuk menganalisis sentimen review makanan dalam bahasa Indonesia. Fungsinya mendeteksi apakah suatu review bernada **positif**, **netral**, atau **negatif**.
 
 Modul ini merupakan bentuk pemanfaatan **Tren AI** dalam pengolahan bahasa alami (_Natural Language Understanding_) sebagai inovasi untuk meningkatkan fitur analisis data secara otomatis.
@@ -1269,24 +1361,27 @@ Modul ini merupakan bentuk pemanfaatan **Tren AI** dalam pengolahan bahasa alami
 
 #### `initializeSentimentAnalyzer()`
 
-**Deskripsi:**  
+**Deskripsi:**
 Melatih model NLP berdasarkan kumpulan contoh kalimat yang dikategorikan sebagai positif, netral, atau negatif. Fungsi ini perlu dipanggil **sebelum pemrosesan pertama** jika model belum terinisialisasi.
 
-**Return:**  
+**Return:**
+
 - `manager` (instance dari `NlpManager` yang telah terlatih)
 
 ---
 
 #### `analyzeSentiment(text)`
 
-**Deskripsi:**  
-Menganalisis sentimen dari teks review dan mengembalikan label sentimen (`positive`, `neutral`, `negative`).  
+**Deskripsi:**
+Menganalisis sentimen dari teks review dan mengembalikan label sentimen (`positive`, `neutral`, `negative`).
 Jika confidence dari model NLP rendah, maka sistem akan menggunakan pendekatan **analisis berbasis keyword** sebagai fallback untuk hasil yang lebih akurat.
 
 **Params:**
+
 - `text` (string): Kalimat atau paragraf review dari pengguna
 
 **Return:**
+
 - `sentimentLabel` (string): Label sentimen (`positive`, `neutral`, `negative`)
 
 ---
@@ -1319,15 +1414,16 @@ const { analyzeSentiment } = require('./helpers/sentimentAnalyzer');
 Semua layanan dalam sistem ini berkomunikasi menggunakan **HTTP REST API** untuk melakukan pertukaran data antar layanan yang berbeda. Setiap layanan memiliki endpoint tertentu yang dipanggil oleh layanan lain sesuai dengan kebutuhan fungsionalitasnya.
 
 ### **Diagram Komunikasi Antar Service**
+
 Komunikasi antar service diatur sedemikian rupa untuk memenuhi fungsionalitas yang dibutuhkan oleh tiap-tiap modul. Berikut adalah beberapa contoh bagaimana layanan berkomunikasi:
 
 1. **Order Service** akan:
+
    - Memanggil **User Service** untuk mengecek validitas `user_id`.
    - Memanggil **Menu Service** untuk mengecek keberadaan dan detail dari `menu_id`.
-
 2. **Review Service** akan:
-   - Mengambil informasi dari **User Service** dan **Menu Service** sebelum menyimpan review baru untuk memastikan informasi terkait `user_id` dan `menu_id` valid.
 
+   - Mengambil informasi dari **User Service** dan **Menu Service** sebelum menyimpan review baru untuk memastikan informasi terkait `user_id` dan `menu_id` valid.
 3. **Layanan lainnya** juga berinteraksi serupa untuk memastikan data yang digunakan oleh setiap layanan selalu terkini dan akurat.
 
 ---
@@ -1335,6 +1431,7 @@ Komunikasi antar service diatur sedemikian rupa untuk memenuhi fungsionalitas ya
 ### **Rincian API dan Komunikasi Layanan**
 
 #### 1. **User Service**
+
 - **`getUserWithOrdersAndReviews` (Controller `user`)**
   - **Deskripsi:** Mengambil informasi pengguna beserta pesanan dan review terkait.
   - **Endpoint yang Digunakan:**
@@ -1344,67 +1441,73 @@ Komunikasi antar service diatur sedemikian rupa untuk memenuhi fungsionalitas ya
     - `GET http://localhost:3004/reviews?menuId=${order.menu_id}` – Mendapatkan review berdasarkan `menu_id` dari pesanan.
 
 #### 2. **Menu Service**
+
 - **`getAllMenus` (Controller `menu`)**
+
   - **Deskripsi:** Mengambil semua menu yang ada beserta detail pesanan terkait.
   - **Endpoint yang Digunakan:**
     - `GET http://localhost:3003/orders/menu/${menu.id}` – Mendapatkan pesanan berdasarkan `menu_id`.
-  
 - **`createMenu` (Controller `menu`)**
+
   - **Deskripsi:** Membuat menu baru, dan memverifikasi pengguna yang membuat menu.
   - **Endpoint yang Digunakan:**
     - `GET http://localhost:3001/users/${userId}` – Mendapatkan detail pengguna yang membuat menu baru.
 
 #### 3. **Order Service**
+
 - **`createOrder` (Controller `order`)**
+
   - **Deskripsi:** Membuat pesanan baru dan memverifikasi pengguna serta menu yang dipilih.
   - **Endpoint yang Digunakan:**
     - `GET http://localhost:3001/users/${userId}` – Memverifikasi pengguna yang membuat pesanan.
     - `GET http://localhost:3002/menus/${menuId}` – Memverifikasi menu yang dipesan.
-
 - **`updateOrder` (Controller `order`)**
+
   - **Deskripsi:** Memperbarui pesanan dan memverifikasi pengguna serta menu yang dipilih.
   - **Endpoint yang Digunakan:**
     - `GET http://localhost:3001/users/${userId}` – Memverifikasi pengguna yang mengubah pesanan.
     - `GET http://localhost:3002/menus/${menuId}` – Memverifikasi menu yang dipesan.
 
 #### 4. **Review Service**
+
 - **`getAllReviews` (Controller `review`)**
+
   - **Deskripsi:** Mengambil semua review beserta informasi pengguna dan menu terkait.
   - **Endpoint yang Digunakan:**
     - `GET http://localhost:3001/users/${review.user_id}` – Mendapatkan detail pengguna dari review.
     - `GET http://localhost:3002/menus/${review.menu_id}` – Mendapatkan detail menu dari review.
-
 - **`getReviewById` (Controller `review`)**
+
   - **Deskripsi:** Mengambil review berdasarkan `review_id` dan memastikan data pengguna serta pesanan terkait.
   - **Endpoint yang Digunakan:**
     - `GET http://localhost:3001/users/${review.user_id}` – Mendapatkan detail pengguna.
     - `GET http://localhost:3002/menus/${review.menu_id}` – Mendapatkan detail menu.
     - `GET http://localhost:3003/orders/${review.order_id}` – Mendapatkan detail pesanan yang terkait.
-
 - **`createReview` (Controller `review`)**
+
   - **Deskripsi:** Membuat review baru berdasarkan pesanan dan menu yang ada.
   - **Endpoint yang Digunakan:**
     - `GET http://localhost:3003/orders/${orderId}` – Mendapatkan detail pesanan.
     - `GET http://localhost:3002/menus/${order.menu_id}` – Mendapatkan detail menu dari pesanan.
-
 - **`updateReview` (Controller `review`)**
+
   - **Deskripsi:** Memperbarui review yang telah ada.
   - **Endpoint yang Digunakan:**
     - `GET http://localhost:3003/orders/${review.order_id}` – Mendapatkan detail pesanan terkait review yang diubah.
-
 - **`getReviewsByUserId` (Controller `review`)**
+
   - **Deskripsi:** Mengambil semua review yang dibuat oleh pengguna berdasarkan `user_id`.
   - **Endpoint yang Digunakan:**
     - `GET http://localhost:3001/users/${userId}` – Mendapatkan detail pengguna.
     - `GET http://localhost:3002/menus/${review.menu_id}` – Mendapatkan detail menu yang di-review.
-
 - **`getReviewsByMenuId` (Controller `review`)**
+
   - **Deskripsi:** Mengambil semua review berdasarkan `menu_id`.
   - **Endpoint yang Digunakan:**
     - `GET http://localhost:3002/menus/${menuId}` – Mendapatkan detail menu.
     - `GET http://localhost:3001/users/${review.user_id}` – Mendapatkan detail pengguna dari review.
-
 - **`getReviewsByMenuIdAndSentiment` (Controller `review`)**
+
   - **Deskripsi:** Mengambil review berdasarkan `menu_id` dan sentimen tertentu.
   - **Endpoint yang Digunakan:**
     - `GET http://localhost:3001/users/${review.user_id}` – Mendapatkan detail pengguna.
@@ -1412,6 +1515,7 @@ Komunikasi antar service diatur sedemikian rupa untuk memenuhi fungsionalitas ya
 ---
 
 ### **Kesimpulan**
+
 Dokumentasi ini menggambarkan bagaimana setiap layanan dalam sistem berkomunikasi untuk memastikan data yang diperlukan oleh satu layanan dapat diakses oleh layanan lainnya. Komunikasi antar layanan menggunakan HTTP REST API dengan standar URL yang konsisten agar mudah dipahami dan diimplementasikan.
 
 Dengan pendekatan ini, kita memastikan bahwa **data antar layanan tetap konsisten**, dan **setiap layanan dapat saling berinteraksi dengan efisien**. Ini juga mendukung skalabilitas, sehingga sistem dapat berkembang dan diintegrasikan dengan layanan lain di masa depan.
@@ -1420,12 +1524,12 @@ Dengan pendekatan ini, kita memastikan bahwa **data antar layanan tetap konsiste
 
 ## Port yang Digunakan di dalam Kode
 
-| Service         | Port |
-|-----------------|------|
-| User Service     | 3001 |
-| Menu Service     | 3002 |
-| Order Service    | 3003 |
-| Review Service   | 3004 |
+| Service        | Port |
+| -------------- | ---- |
+| User Service   | 3001 |
+| Menu Service   | 3002 |
+| Order Service  | 3003 |
+| Review Service | 3004 |
 
 ---
 
