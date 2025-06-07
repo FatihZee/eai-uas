@@ -108,7 +108,7 @@
     .user-name {
       font-weight: 600;
       color: white;
-      max-width: 160px; /* Memperlebar area nama */
+      max-width: 160px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -152,7 +152,7 @@
       }
       
       .user-name {
-        max-width: none; /* Full width on mobile */
+        max-width: none;
       }
     }
     
@@ -170,7 +170,6 @@
       justify-content: center;
     }
     
-    /* Animation for navbar */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-10px); }
       to { opacity: 1; transform: translateY(0); }
@@ -263,7 +262,6 @@
 </div>
 
 <script>
-  // Function to set active nav item based on current page
   function setActiveNavItem() {
     const currentPage = window.location.pathname.split('/').pop();
     const navLinks = document.querySelectorAll('.nav-link');
@@ -276,7 +274,6 @@
     });
   }
   
-  // Function to get user info and display it
   function displayUserInfo() {
     try {
       const token = localStorage.getItem("token");
@@ -290,17 +287,14 @@
       const profileName = document.getElementById("profileName");
       const userInitial = document.getElementById("userInitial");
 
-      console.log("User data:", user); // Debugging
+      console.log("User data:", user);
 
       if (user && user.name) {
-        // Ambil nama depan (sebelum spasi)
         const firstName = user.name.split(' ')[0];
 
-        // Tampilkan nama depan saja
         profileName.textContent = firstName;
-        profileName.title = user.name; // Tooltip untuk nama lengkap
+        profileName.title = user.name;
 
-        // Set inisial user (huruf pertama nama depan)
         userInitial.textContent = firstName.charAt(0).toUpperCase();
       } else {
         console.error("Nama pengguna tidak ditemukan dalam data user");
@@ -312,8 +306,6 @@
     }
   }
 
-  
-  // Logout function
   function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -321,35 +313,29 @@
     window.location.href = "index.html";
   }
   
-  // Initialize navbar component
   function initNavbar() {
-    // Jalankan dengan delay kecil untuk memastikan DOM sudah siap
     setTimeout(function() {
       displayUserInfo();
       setActiveNavItem();
     }, 100);
   }
   
-  // Run initialization when DOM is loaded
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initNavbar);
   } else {
-    initNavbar(); // Jika DOM sudah loaded
+    initNavbar();
   }
   
-  // Script untuk memuat navbar di halaman lain
   class NavbarLoader {
     static loadNavbar(containerId) {
       const container = document.getElementById(containerId || 'navbarContainer');
       if (container) {
-        // Kode untuk memuat navbar ke container
         console.log("Navbar loaded");
         initNavbar();
       }
     }
   }
   
-  // Make navbar available globally
   window.NavbarLoader = NavbarLoader;
 </script>
 

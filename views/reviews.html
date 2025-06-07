@@ -165,7 +165,7 @@
     <!-- Reviews List -->
     <div class="card">
       <div class="card-header">
-        <h5 class="mb-0"><i class="fas fa-list me-2"></i>All Reviews</h5>
+        <h5 class="mb-0 text-white"><i class="fas fa-list me-2 text-white"></i>All Reviews</h5>
       </div>
       <div class="card-body p-0">
         <!-- Loading -->
@@ -272,7 +272,6 @@
       const reviewForm = document.getElementById("reviewForm");
       const reviewModalTitle = document.getElementById("reviewModalTitle");
 
-      // GraphQL helper function
       async function fetchGraphQL(url, query, variables = {}) {
         try {
           const response = await fetch(url, {
@@ -296,7 +295,6 @@
         }
       }
 
-      // Star rating functionality
       function initStarRating() {
         const starBtns = document.querySelectorAll('.star-btn');
         const ratingInput = document.getElementById('reviewRating');
@@ -307,7 +305,6 @@
             const rating = parseInt(btn.dataset.rating);
             ratingInput.value = rating;
 
-            // Update visual state
             starBtns.forEach((starBtn, index) => {
               if (index < rating) {
                 starBtn.classList.remove('btn-outline-warning');
@@ -321,39 +318,30 @@
         });
       }
 
-      // FIXED: Helper function untuk format tanggal yang aman
       function formatDate(dateValue) {
         try {
           if (!dateValue) return 'Unknown date';
           
           let date;
           
-          // Handle different date formats
           if (typeof dateValue === 'string') {
-            // Check if it's a timestamp string (all digits)
             if (/^\d+$/.test(dateValue)) {
-              // Convert string timestamp to number
               const timestamp = parseInt(dateValue);
-              // Check if it's in milliseconds (13 digits) or seconds (10 digits)
               date = timestamp > 9999999999 ? new Date(timestamp) : new Date(timestamp * 1000);
             } else {
-              // Regular ISO string
               date = new Date(dateValue);
             }
           } else if (typeof dateValue === 'number') {
-            // Check if it's in milliseconds or seconds
             date = dateValue > 9999999999 ? new Date(dateValue) : new Date(dateValue * 1000);
           } else {
             date = new Date(dateValue);
           }
           
-          // Check if date is valid
           if (isNaN(date.getTime())) {
             console.warn('Invalid date:', dateValue);
             return 'Invalid date';
           }
           
-          // Format date in a readable way
           return date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
@@ -367,7 +355,6 @@
         }
       }
 
-      // FIXED: Load reviews with proper date formatting
       async function loadReviews() {
         document.getElementById('loadingSpinner').style.display = 'block';
         document.getElementById('reviewsContainer').style.display = 'none';
@@ -400,10 +387,8 @@
           if (reviewsData?.reviews) {
             const reviews = reviewsData.reviews;
             
-            // Debug: Log raw data to see the format
             console.log('Raw reviews data:', reviews);
             
-            // Update stats
             document.getElementById('totalReviews').textContent = reviews.length;
             
             const positiveCount = reviews.filter(r => r.sentiment === 'positive').length;
@@ -424,13 +409,10 @@
                 const sentimentIcon = review.sentiment === 'positive' ? 'thumbs-up' : 
                                     review.sentiment === 'negative' ? 'thumbs-down' : 'meh';
 
-                // Use the safe date formatting function
                 const formattedDate = formatDate(review.created_at);
                 
-                // Debug each review date
                 console.log(`Review ${review.id}: ${review.created_at} -> ${formattedDate}`);
 
-                // Safely escape comment for onclick attribute
                 const safeComment = (review.comment || '').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
 
                 return `
@@ -483,7 +465,6 @@
         }
       }
 
-      // ALSO FIX: Load orders for review with proper date formatting
       async function loadOrdersForReview() {
         try {
           const ordersData = await fetchGraphQL('http://localhost:4003/graphql', `
@@ -521,7 +502,6 @@
               `;
             }).join('');
 
-            // Add click handlers
             document.querySelectorAll('.order-select-card').forEach(card => {
               card.addEventListener('click', () => {
                 document.querySelectorAll('.order-select-card').forEach(c => c.classList.remove('selected'));
@@ -548,7 +528,6 @@
         }
       }
 
-      // Handle review form submission
       reviewForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const reviewId = document.getElementById("reviewId").value;
@@ -630,16 +609,13 @@
         }
       });
 
-      // Edit review function
       window.editReview = (id, rating, comment) => {
         document.getElementById("reviewId").value = id;
         document.getElementById("reviewRating").value = rating;
-        document.getElementById("reviewComment").value = comment.replace(/&apos;/g, "'").replace(/&quot;/g, '"'); // Convert back from HTML entities
+        document.getElementById("reviewComment").value = comment.replace(/&apos;/g, "'").replace(/&quot;/g, '"');
 
-        // Hide order selection when editing
         document.getElementById("orderSelectionContainer").style.display = 'none';
 
-        // Update star buttons visual state
         const starBtns = document.querySelectorAll('.star-btn');
         starBtns.forEach(btn => {
           const btnRating = parseInt(btn.dataset.rating);
@@ -656,7 +632,6 @@
         reviewModal.show();
       };
 
-      // Delete review function
       window.deleteReview = (id) => {
         Swal.fire({
           title: 'Confirm Delete',
@@ -700,7 +675,6 @@
         });
       };
 
-      // Logout function
       window.logout = function () {
         localStorage.clear();
         window.location.href = "index.html";
@@ -712,16 +686,13 @@
     });
   </script>
 
-  <!-- Load navbar from external file -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Memuat navbar dari file navbar.html
       fetch('navbar.html')
         .then(response => response.text())
         .then(data => {
           document.getElementById('navbarContainer').innerHTML = data;
           
-          // Memastikan script navbar dijalankan
           const scripts = document.getElementById('navbarContainer').querySelectorAll('script');
           scripts.forEach(script => {
             const newScript = document.createElement('script');
@@ -729,7 +700,6 @@
             document.body.appendChild(newScript);
           });
           
-          // Jalankan inisialisasi navbar
           if (typeof initNavbar === 'function') {
             initNavbar();
           }
