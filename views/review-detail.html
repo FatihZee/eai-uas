@@ -83,7 +83,6 @@
 
       const reviewDetail = document.getElementById("reviewDetail");
 
-      // GraphQL helper function
       async function fetchGraphQL(url, query, variables = {}) {
         try {
           const response = await fetch(url, {
@@ -114,7 +113,6 @@
 
       async function loadReviewDetail(id) {
         try {
-          // Load review details via GraphQL
           const reviewData = await fetchGraphQL('http://localhost:4004/graphql', `
             query GetReview($id: ID!) {
               review(id: $id) {
@@ -265,7 +263,6 @@
         }
       }
 
-      // Helper functions
       function renderStars(rating) {
         const fullStars = Math.floor(rating);
         const hasHalfStar = rating % 1 !== 0;

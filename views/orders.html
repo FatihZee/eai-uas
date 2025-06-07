@@ -215,7 +215,6 @@
       margin-bottom: 1rem;
     }
     
-    /* Animation for new order button */
     @keyframes pulse {
       0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
       70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
@@ -226,7 +225,6 @@
       animation: pulse 2s infinite;
     }
     
-    /* Custom scrollbar */
     ::-webkit-scrollbar {
       width: 8px;
     }
@@ -365,9 +363,8 @@
       const decreaseBtn = document.getElementById("decreaseBtn");
       const increaseBtn = document.getElementById("increaseBtn");
 
-      let menuData = []; // Tetap digunakan untuk mengisi dropdown menu
+      let menuData = [];
 
-      // Quantity controls (tetap sama)
       decreaseBtn.addEventListener("click", () => {
         const currentValue = parseInt(quantityInput.value);
         if (currentValue > 1) {
@@ -380,12 +377,10 @@
         quantityInput.value = currentValue + 1;
       });
 
-      // FIXED: Updated loadMenus function to use GraphQL
       async function loadMenus() {
         try {
           console.log('Loading menus from GraphQL...');
           
-          // Use Menu Service GraphQL endpoint
           const response = await fetch('http://localhost:4002/graphql', {
             method: 'POST',
             headers: {
@@ -432,7 +427,6 @@
         } catch (error) {
           console.error('Error loading menus:', error);
           
-          // Try fallback to REST API if GraphQL fails
           try {
             console.log('Trying REST API fallback...');
             const restResponse = await fetch('http://localhost:3002/menus', {
@@ -455,10 +449,8 @@
             console.error('REST API fallback also failed:', restError);
           }
           
-          // If both GraphQL and REST fail
           menuSelect.innerHTML = '<option value="">Failed to load menus</option>';
           
-          // Show error but don't block the page
           Swal.fire({
             title: 'Menu Loading Error',
             text: `Could not load menu options: ${error.message}. You can still view your orders, but creating new orders may be limited.`,
@@ -470,9 +462,8 @@
         }
       }
 
-      // Enhanced GraphQL helper with URL parameter support
       async function fetchGraphQL(query, variables = {}, customUrl = null) {
-        const graphqlUrl = customUrl || "http://localhost:4003/graphql"; // Default to Order Service
+        const graphqlUrl = customUrl || "http://localhost:4003/graphql";
         
         try {
           const res = await fetch(graphqlUrl, {
@@ -508,7 +499,6 @@
         }
       }
 
-      // Add service health checker
       async function checkServiceHealth() {
         const services = [
           { name: 'Menu Service (GraphQL)', url: 'http://localhost:4002/graphql' },
@@ -542,11 +532,6 @@
         }
       }
 
-      // Fungsi untuk memuat daftar pesanan menggunakan GraphQL
-      
-// ...existing code...
-
-      // Fungsi untuk memuat daftar pesanan menggunakan GraphQL
       async function loadOrders() {
         loadingSpinner.style.display = "flex";
         orderList.style.display = "none";
@@ -572,18 +557,15 @@
             }
           `;
           
-          // Pastikan user.id dikirim sebagai string jika schema GraphQL mengharapkan ID!
           const data = await fetchGraphQL(query, { userId: user.id.toString() });
           const orders = data.ordersByUser;
 
           if (!orders || orders.length === 0) {
             emptyState.style.display = "block";
           } else {
-            // Check payment status for each order
             const ordersWithPaymentStatus = await Promise.all(
               orders.map(async (order) => {
                 try {
-                  // Check if order has been paid
                   const paymentData = await fetchGraphQL(`
                     query GetPaymentsByOrder($orderId: ID!) {
                       paymentsByOrder(orderId: $orderId) {
@@ -727,27 +709,25 @@
         }
       }
 
-// ...existing code...
-
-      // Reset modal when opening for new order
       orderModalEl.addEventListener('show.bs.modal', function (event) {
-        // Check if the modal was triggered by an edit button
-        const button = event.relatedTarget;
-        const isEditMode = button && button.classList.contains('edit-btn');
+        const relatedButton = event.relatedTarget;
 
-        if (!isEditMode) {
+        const isOpenedForNewOrder = relatedButton && 
+                                    !relatedButton.classList.contains('edit-btn') &&
+                                    (relatedButton.getAttribute('data-bs-target') === '#orderModal');
+
+        if (isOpenedForNewOrder) {
           orderModalTitle.innerHTML = '<i class="fas fa-utensils me-2"></i>Create Order';
           orderForm.reset();
           orderIdInput.value = '';
-          quantityInput.value = 1; // Default quantity
+          quantityInput.value = 1;
         }
       });
 
-      // Handle form submission untuk Create/Update Order menggunakan GraphQL
       orderForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const orderIdValue = orderIdInput.value; // Ini akan string
-        const menuIdValue = menuSelect.value;   // Ini akan string dari select value
+        const orderIdValue = orderIdInput.value;
+        const menuIdValue = menuSelect.value;
         const quantityValue = parseInt(quantityInput.value);
 
         const isEditing = !!orderIdValue;
@@ -816,7 +796,7 @@
             timerProgressBar: true,
           });
           orderForm.reset();
-          orderIdInput.value = ''; // Pastikan orderId direset
+          orderIdInput.value = '';
           orderModal.hide();
           loadOrders();
         } catch (error) {
@@ -829,16 +809,14 @@
         }
       });
 
-      // Fungsi untuk mengisi modal edit (tetap sama, hanya mempopulasi form)
       window.editOrder = (id, menuId, quantity) => {
         orderModalTitle.innerHTML = '<i class="fas fa-edit me-2"></i>Edit Order';
-        orderIdInput.value = id.toString(); // Pastikan ID adalah string
-        menuSelect.value = menuId.toString(); // Pastikan menuId adalah string
+        orderIdInput.value = id.toString();
+        menuSelect.value = menuId.toString();
         quantityInput.value = quantity;
         orderModal.show();
       };
 
-      // Fungsi untuk menghapus order menggunakan GraphQL
       window.deleteOrder = async (id) => {
         const confirmDelete = await Swal.fire({
           title: 'Delete this order?',
@@ -868,7 +846,6 @@
         `;
 
         try {
-          // Pastikan ID dikirim sebagai string jika schema GraphQL mengharapkan ID!
           const data = await fetchGraphQL(mutation, { id: id.toString() });
 
           Swal.fire({
@@ -891,7 +868,6 @@
         }
       };
 
-      // FIXED: Payment creation function with proper URL handling
       window.createPaymentForOrder = async (orderId) => {
         const result = await Swal.fire({
           title: 'Create Payment',
@@ -913,7 +889,6 @@
               didOpen: () => { Swal.showLoading(); }
             });
 
-            // Use Payment Service GraphQL URL as third parameter
             const paymentData = await fetchGraphQL(`
               mutation CreatePayment($input: CreatePaymentInput!) {
                 createPayment(input: $input) {
@@ -929,7 +904,7 @@
               input: { 
                 orderId: orderId.toString() 
               } 
-            }, "http://localhost:4005/graphql"); // Payment Service URL
+            }, "http://localhost:4005/graphql");
 
             if (paymentData?.createPayment) {
               Swal.fire({
@@ -957,7 +932,6 @@
         }
       };
 
-      // Add payment status checker function
       window.checkPaymentStatus = async (paymentId) => {
         try {
           Swal.fire({
@@ -983,7 +957,6 @@
               confirmButtonColor: '#6366f1'
             });
 
-            // Refresh orders list
             loadOrders();
           } else {
             throw new Error(result.detail || 'Failed to check status');
@@ -998,17 +971,12 @@
         }
       };
 
-      // Add auto-refresh for pending payments
       function startAutoRefresh() {
         setInterval(async () => {
-          // Check for pending payments every 30 seconds
-          // Implementation details...
         }, 30000);
       }
 
-      // Call startAutoRefresh when page loads
       document.addEventListener("DOMContentLoaded", () => {
-        // ... existing code ...
         startAutoRefresh();
       });
 
@@ -1017,7 +985,6 @@
         window.location.href = "index.html";
       };
 
-      // Initialize with service health check
       checkServiceHealth().then(() => {
         loadMenus().then(() => {
           loadOrders();
@@ -1030,7 +997,6 @@
   </script>
 
   <script>
-    // Script untuk memuat navbar (tetap sama)
     document.addEventListener('DOMContentLoaded', function() {
       fetch('navbar.html')
         .then(response => response.text())
