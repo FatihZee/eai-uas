@@ -73,7 +73,6 @@
 
       const orderDetail = document.getElementById("orderDetail");
 
-      // GraphQL helper function
       async function fetchGraphQL(url, query, variables = {}) {
         try {
           const response = await fetch(url, {
@@ -104,7 +103,6 @@
 
       async function loadOrderDetail(id) {
         try {
-          // Load order details via GraphQL
           const orderData = await fetchGraphQL('http://localhost:4003/graphql', `
             query GetOrder($id: ID!) {
               order(id: $id) {
@@ -136,7 +134,6 @@
 
           const order = orderData.order;
 
-          // Check if order has been paid
           let paymentInfo = null;
           try {
             const paymentsData = await fetchGraphQL('http://localhost:4005/graphql', `
@@ -312,7 +309,6 @@
         }
       }
 
-      // Create payment for order
       window.createPaymentForOrder = async (orderId) => {
         const result = await Swal.fire({
           title: 'Create Payment',
@@ -357,7 +353,6 @@
                 if (paymentData.createPayment.redirect_url) {
                   window.open(paymentData.createPayment.redirect_url, '_blank');
                 }
-                // Reload order detail to show payment info
                 loadOrderDetail(orderId);
               });
             }
@@ -372,7 +367,6 @@
         }
       };
 
-      // Add payment status checker function
       window.checkPaymentStatus = async (paymentId) => {
         try {
           Swal.fire({
@@ -398,7 +392,6 @@
               confirmButtonColor: '#6366f1'
             });
 
-            // Reload order details to show updated payment status
             loadOrderDetail();
           } else {
             throw new Error(result.detail || 'Failed to check status');

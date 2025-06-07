@@ -266,7 +266,6 @@
       const editUserModal = new bootstrap.Modal(document.getElementById("editUserModal"));
       const editUserForm = document.getElementById("editUserForm");
 
-      // GraphQL helper function
       async function fetchGraphQL(url, query, variables = {}) {
         try {
           const response = await fetch(url, {
@@ -290,10 +289,8 @@
         }
       }
 
-      // Load users with their stats using GraphQL
       async function loadUsers() {
         try {
-          // Get users with their related data
           const usersData = await fetchGraphQL('http://localhost:4001/graphql', `
             query {
               users {
@@ -317,10 +314,8 @@
           if (usersData?.users) {
             const users = usersData.users;
             
-            // Update stats
             document.getElementById('totalUsersCount').textContent = users.length;
             
-            // Calculate new users this month
             const thisMonth = new Date();
             thisMonth.setDate(1);
             const newUsers = users.filter(user => 
@@ -328,14 +323,12 @@
             ).length;
             document.getElementById('newUsersCount').textContent = newUsers;
             
-            // Calculate total active orders and reviews
             const totalOrders = users.reduce((sum, user) => sum + (user.orders?.length || 0), 0);
             const totalReviews = users.reduce((sum, user) => sum + (user.reviews?.length || 0), 0);
             
             document.getElementById('activeOrdersCount').textContent = totalOrders;
             document.getElementById('totalReviewsCount').textContent = totalReviews;
 
-            // Render users table
             userTableBody.innerHTML = users.map(user => {
               const userInitials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
               const ordersCount = user.orders?.length || 0;
@@ -397,7 +390,6 @@
         }
       }
 
-      // Edit user function
       window.editUser = (id, name, email, phone) => {
         document.getElementById("editUserId").value = id;
         document.getElementById("editName").value = name;
@@ -407,7 +399,6 @@
         editUserModal.show();
       };
 
-      // Handle edit user form submission
       editUserForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const id = document.getElementById("editUserId").value;
@@ -455,7 +446,6 @@
         }
       });
 
-      // Delete user function
       window.deleteUser = async (id) => {
         const result = await Swal.fire({
           title: 'Delete User?',
@@ -508,7 +498,6 @@
     });
   </script>
 
-  <!-- Load navbar -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       fetch('navbar.html')
