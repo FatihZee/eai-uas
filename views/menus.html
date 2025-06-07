@@ -115,7 +115,7 @@
         <h2 class="mb-1"><i class="fas fa-utensils me-2"></i>Menu Management</h2>
         <p class="text-muted mb-0">Manage restaurant menu items</p>
       </div>
-      <!-- Update button di header untuk menggunakan function yang baru -->
+
       <button class="btn btn-primary" onclick="addNewMenu()">
         <i class="fas fa-plus me-2"></i>Add New Menu
       </button>
@@ -133,7 +133,7 @@
       <i class="fas fa-utensils fa-4x text-muted mb-3"></i>
       <h4>No Menus Available</h4>
       <p class="text-muted">Start by adding your first menu item!</p>
-      <!-- Update button di empty state juga -->
+
       <button class="btn btn-primary" onclick="addNewMenu()">
         <i class="fas fa-plus me-2"></i>Add First Menu
       </button>
@@ -207,10 +207,8 @@
       const menuForm = document.getElementById("menuForm");
       const menuModalTitle = document.getElementById("menuModalTitle");
 
-      // Variable untuk track mode edit
       let isEditMode = false;
 
-      // GraphQL helper function
       async function fetchGraphQL(url, query, variables = {}) {
         try {
           const response = await fetch(url, {
@@ -234,7 +232,6 @@
         }
       }
 
-      // Helper function untuk format tanggal
       function formatDate(dateValue) {
         if (!dateValue) return 'Unknown date';
         try {
@@ -255,7 +252,6 @@
         }
       }
 
-      // Load menus using GraphQL
       async function loadMenus() {
         loadingSpinner.style.display = "block";
         menuGrid.style.display = "none";
@@ -291,7 +287,6 @@
               menuGrid.innerHTML = menus.map((menu, index) => {
                 const delay = index * 100;
                 
-                // Escape single quotes untuk prevent JavaScript errors
                 const safeName = (menu.name || '').replace(/'/g, "\\'");
                 const safeDescription = (menu.description || '').replace(/'/g, "\\'");
                 
@@ -359,19 +354,15 @@
         }
       }
 
-      // Reset modal HANYA jika bukan edit mode
       document.getElementById("menuModal").addEventListener('show.bs.modal', function (event) {
-        // Jangan reset jika sedang dalam edit mode
         if (!isEditMode) {
           menuModalTitle.innerHTML = '<i class="fas fa-utensils me-2"></i>Add New Menu';
           menuForm.reset();
           document.getElementById("menuId").value = '';
         }
-        // Reset flag setelah modal ditampilkan
         isEditMode = false;
       });
 
-      // Handle menu form submission
       menuForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const menuId = document.getElementById("menuId").value;
@@ -379,7 +370,6 @@
         const description = document.getElementById("menuDescription").value.trim();
         const price = parseFloat(document.getElementById("menuPrice").value);
 
-        // Validation
         if (!name) {
           Swal.fire({
             title: 'Validation Error',
@@ -404,7 +394,7 @@
 
         try {
           if (isEditing) {
-            console.log('Updating menu with ID:', menuId); // Debug log
+            console.log('Updating menu with ID:', menuId);
             await fetchGraphQL('http://localhost:4002/graphql', `
               mutation UpdateMenu($id: ID!, $input: UpdateMenuInput!) {
                 updateMenu(id: $id, input: $input) {
@@ -420,7 +410,7 @@
               input: { name, description, price } 
             });
           } else {
-            console.log('Creating new menu'); // Debug log
+            console.log('Creating new menu');
             await fetchGraphQL('http://localhost:4002/graphql', `
               mutation CreateMenu($input: CreateMenuInput!) {
                 createMenu(input: $input) {
@@ -458,25 +448,20 @@
         }
       });
 
-      // Edit menu function - PERBAIKAN UTAMA
       window.editMenu = (id, name, description, price) => {
-        console.log('Edit menu called with:', { id, name, description, price }); // Debug log
+        console.log('Edit menu called with:', { id, name, description, price });
         
-        // Set flag edit mode SEBELUM show modal
         isEditMode = true;
         
-        // Set modal title dan form values
         menuModalTitle.innerHTML = '<i class="fas fa-edit me-2"></i>Edit Menu';
         document.getElementById("menuId").value = id;
         document.getElementById("menuName").value = name || '';
         document.getElementById("menuDescription").value = description || '';
         document.getElementById("menuPrice").value = price || 0;
         
-        // Show modal
         menuModal.show();
       };
 
-      // Function untuk add new menu
       window.addNewMenu = () => {
         isEditMode = false;
         menuModalTitle.innerHTML = '<i class="fas fa-utensils me-2"></i>Add New Menu';
@@ -485,7 +470,6 @@
         menuModal.show();
       };
 
-      // Delete menu function
       window.deleteMenu = async (id) => {
         const result = await Swal.fire({
           title: 'Delete Menu?',
@@ -501,7 +485,7 @@
 
         try {
           await fetchGraphQL('http://localhost:4002/graphql', `
-            mutation DeleteMenu($id: $id) {
+            mutation DeleteMenu($id: ID!) {
               deleteMenu(id: $id) {
                 message
                 id
@@ -534,7 +518,6 @@
         window.location.href = "index.html";
       };
 
-      // Add CSS animation
       const style = document.createElement('style');
       style.textContent = `
         @keyframes fadeIn {
@@ -548,7 +531,6 @@
     });
   </script>
 
-  <!-- Load navbar -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       fetch('navbar.html')
@@ -569,7 +551,6 @@
     });
   </script>
 
-  <!-- Event delegation untuk handle edit buttons -->
   <script>
     document.addEventListener('click', function(e) {
       if (e.target.closest('[data-action="edit"]')) {

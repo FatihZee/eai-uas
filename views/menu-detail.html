@@ -160,7 +160,6 @@
       const menuDetail = document.getElementById("menuDetail");
       const menuId = new URLSearchParams(window.location.search).get("id");
 
-      // GraphQL helper function
       async function fetchGraphQL(url, query, variables = {}) {
         try {
           const response = await fetch(url, {
@@ -205,7 +204,6 @@
 
     async function loadMenuDetail(id) {
       try {
-        // Load menu details via GraphQL
         const menuData = await fetchGraphQL('http://localhost:4002/graphql', `
           query GetMenu($id: ID!) {
             menu(id: $id) {
@@ -230,7 +228,6 @@
 
         const menu = menuData.menu;
 
-        // Load order count via GraphQL (gunakan orderCountByMenu yang benar)
         let orderCount = menu.orderCount || 0;
         try {
           const orderData = await fetchGraphQL('http://localhost:4003/graphql', `
@@ -244,10 +241,8 @@
           orderCount = orderData?.orderCountByMenu?.count || 0;
         } catch (orderError) {
           console.log('Could not fetch order count:', orderError.message);
-          // Gunakan orderCount dari menu service jika ada
         }
 
-        // Load rating stats via GraphQL
         let ratingStats = { averageRating: 0, reviewCount: 0 };
         try {
           const reviewStatsData = await fetchGraphQL('http://localhost:4004/graphql', `
@@ -264,7 +259,6 @@
           console.log('Could not fetch review stats:', reviewError.message);
         }
 
-        // Load sentiment stats via GraphQL
         let sentimentStats = { positive: 0, neutral: 0, negative: 0, total: 0 };
         try {
           const sentimentData = await fetchGraphQL('http://localhost:4004/graphql', `
@@ -283,8 +277,7 @@
           console.log('Could not fetch sentiment stats:', sentimentError.message);
         }
         
-        // Calculate percentages
-        const total = sentimentStats.total || 1; // Prevent division by zero
+        const total = sentimentStats.total || 1;
         const sentiments = {
           positivePercentage: Math.round((sentimentStats.positive / total) * 100),
           neutralPercentage: Math.round((sentimentStats.neutral / total) * 100),
@@ -391,12 +384,10 @@
       try {
         const sentiment = document.getElementById("sentimentFilter").value;
         
-        // Build GraphQL query based on filter
         let query;
         let variables = { menuId };
 
         if (sentiment) {
-          // Check if reviewsByMenuAndSentiment exists, if not use alternative approach
           query = `
             query GetReviewsBySentiment($menuId: ID!, $sentiment: String!) {
               reviewsByMenuAndSentiment(menuId: $menuId, sentiment: $sentiment) {
@@ -436,7 +427,6 @@
         let reviews = [];
         if (sentiment) {
           reviews = reviewsData?.reviewsByMenuAndSentiment || [];
-          // If sentiment-specific query failed, fall back to all reviews and filter client-side
           if (reviews.length === 0) {
             const allReviewsData = await fetchGraphQL('http://localhost:4004/graphql', `
               query GetReviewsByMenu($menuId: ID!) {
@@ -517,7 +507,6 @@
       }
     }
 
-    // Helper functions
     async function fetchGraphQL(url, query, variables = {}) {
       const token = localStorage.getItem("token");
       try {

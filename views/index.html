@@ -272,7 +272,6 @@
     const password = document.getElementById("password").value;
 
     try {
-      // Gunakan GraphQL endpoint di port 4001
       const res = await fetch("http://localhost:4001/graphql", {
         method: "POST",
         headers: {
@@ -304,7 +303,6 @@
 
       const responseData = await res.json();
       
-      // Check for GraphQL errors
       if (responseData.errors) {
         throw new Error(responseData.errors[0].message);
       }

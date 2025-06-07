@@ -664,13 +664,11 @@
   </script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Memuat navbar dari file navbar.html
       fetch('navbar.html')
         .then(response => response.text())
         .then(data => {
           document.getElementById('navbarContainer').innerHTML = data;
           
-          // Memastikan script navbar dijalankan
           const scripts = document.getElementById('navbarContainer').querySelectorAll('script');
           scripts.forEach(script => {
             const newScript = document.createElement('script');
@@ -678,7 +676,6 @@
             document.body.appendChild(newScript);
           });
           
-          // Jalankan inisialisasi navbar
           if (typeof initNavbar === 'function') {
             initNavbar();
           }
