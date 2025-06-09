@@ -1,0 +1,44 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: mysql-order
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: yes
+      MYSQL_DATABASE: eai_order_service
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./eai_order_service.sql:/docker-entrypoint-initdb.d/eai_order_service.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eai-network
+
+  order-service:
+    build: .
+    container_name: order-service
+    ports:
+      - "3003:3003"      # REST
+      - "4003:4003"      # GraphQL
+    env_file:
+      - .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: npm run dev:both
+    networks:
+      - eai-network
+
+volumes:
+  mysql-data:
+  
+networks:
+  eai-network:
+    driver: bridge

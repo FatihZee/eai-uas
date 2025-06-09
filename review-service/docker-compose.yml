@@ -1,0 +1,44 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: mysql-review
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: yes
+      MYSQL_DATABASE: eai_review_service
+    ports:
+      - "3309:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./eai_review_service.sql:/docker-entrypoint-initdb.d/eai_review_service.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eai-network
+
+  review-service:
+    build: .
+    container_name: review-service
+    ports:
+      - "3004:3004"      # REST
+      - "4004:4004"      # GraphQL
+    env_file:
+      - .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: npm run dev:both
+    networks:
+      - eai-network
+
+volumes:
+  mysql-data:
+  
+networks:
+  eai-network:
+    driver: bridge

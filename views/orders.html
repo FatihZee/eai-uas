@@ -381,7 +381,7 @@
         try {
           console.log('Loading menus from GraphQL...');
           
-          const response = await fetch('http://localhost:4002/graphql', {
+          const response = await fetch('http://menu-service:4002/graphql', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

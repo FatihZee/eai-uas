@@ -1,0 +1,231 @@
+services:
+  # --- USER SERVICE ---
+  mysql-user:
+    image: mysql:8
+    container_name: mysql-user
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: yes
+      MYSQL_DATABASE: eai_user_service
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data-user:/var/lib/mysql
+      - ./user-service/eai_user_service.sql:/docker-entrypoint-initdb.d/eai_user_service.sql
+    networks:
+      - eai-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./user-service/.env
+    environment:
+      MENU_SERVICE_URL: http://host.docker.internal:4002
+    depends_on:
+      mysql-user:
+        condition: service_healthy
+    volumes:
+      - ./user-service:/app
+    command: npm run dev:both
+    networks:
+      - eai-network
+
+  # --- MENU SERVICE ---
+  mysql-menu:
+    image: mysql:8
+    container_name: mysql-menu
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: yes
+      MYSQL_DATABASE: eai_menu_service
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data-menu:/var/lib/mysql
+      - ./menu-service/eai_menu_service.sql:/docker-entrypoint-initdb.d/eai_menu_service.sql
+    networks:
+      - eai-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  menu-service:
+    build: ./menu-service
+    container_name: menu-service
+    ports:
+      - "3002:3002"
+    env_file:
+      - ./menu-service/.env
+    environment:
+      USER_SERVICE_URL: http://host.docker.internal:4001
+      ORDER_SERVICE_URL: http://host.docker.internal:4003
+    depends_on:
+      mysql-menu:
+        condition: service_healthy
+    volumes:
+      - ./menu-service:/app
+    command: npm run dev:both
+    networks:
+      - eai-network
+
+  # --- ORDER SERVICE ---
+  mysql-order:
+    image: mysql:8
+    container_name: mysql-order
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: yes
+      MYSQL_DATABASE: eai_order_service
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql-data-order:/var/lib/mysql
+      - ./order-service/eai_order_service.sql:/docker-entrypoint-initdb.d/eai_order_service.sql
+    networks:
+      - eai-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  order-service:
+    build: ./order-service
+    container_name: order-service
+    ports:
+      - "3003:3003"
+    env_file:
+      - ./order-service/.env
+    environment:
+      USER_SERVICE_URL: http://host.docker.internal:4001
+      MENU_SERVICE_URL: http://host.docker.internal:4002
+    depends_on:
+      mysql-order:
+        condition: service_healthy
+    volumes:
+      - ./order-service:/app
+    command: npm run dev:both
+    networks:
+      - eai-network
+
+  # --- REVIEW SERVICE ---
+  mysql-review:
+    image: mysql:8
+    container_name: mysql-review
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: yes
+      MYSQL_DATABASE: eai_review_service
+    ports:
+      - "3309:3306"
+    volumes:
+      - mysql-data-review:/var/lib/mysql
+      - ./review-service/eai_review_service.sql:/docker-entrypoint-initdb.d/eai_review_service.sql
+    networks:
+      - eai-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  review-service:
+    build: ./review-service
+    container_name: review-service
+    ports:
+      - "3004:3004"
+    env_file:
+      - ./review-service/.env
+    environment:
+      USER_SERVICE_URL: http://host.docker.internal:4001
+      MENU_SERVICE_URL: http://host.docker.internal:4002
+    depends_on:
+      mysql-review:
+        condition: service_healthy
+    volumes:
+      - ./review-service:/app
+    command: npm run dev:both
+    networks:
+      - eai-network
+
+  # --- PAYMENT SERVICE ---
+  mysql-payment:
+    image: mysql:8
+    container_name: mysql-payment
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: yes
+      MYSQL_DATABASE: eai_payment_service
+    ports:
+      - "3310:3306"
+    volumes:
+      - mysql-data-payment:/var/lib/mysql
+      - ./payment-service/eai_payment_service.sql:/docker-entrypoint-initdb.d/eai_payment_service.sql
+    networks:
+      - eai-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  payment-service:
+    build: ./payment-service
+    container_name: payment-service
+    ports:
+      - "3005:3005"
+    env_file:
+      - ./payment-service/.env
+    environment:
+      ORDER_SERVICE_URL: http://host.docker.internal:4003
+      USER_SERVICE_URL: http://host.docker.internal:4001
+    depends_on:
+      mysql-payment:
+        condition: service_healthy
+    volumes:
+      - ./payment-service:/app
+    command: npm run dev:both
+    networks:
+      - eai-network
+
+  # --- NGINX GATEWAY (Reverse Proxy untuk GraphQL) ---
+  nginx-gateway:
+    image: nginx:alpine
+    container_name: nginx-gateway
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "4001:4001"
+      - "4002:4002"
+      - "4003:4003"
+      - "4004:4004"
+      - "4005:4005"
+    depends_on:
+      - user-service
+      - menu-service
+      - order-service
+      - review-service
+      - payment-service
+    networks:
+      - eai-network
+
+networks:
+  eai-network:
+    driver: bridge
+
+volumes:
+  mysql-data-user:
+  mysql-data-menu:
+  mysql-data-order:
+  mysql-data-review:
+  mysql-data-payment:

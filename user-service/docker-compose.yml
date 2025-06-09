@@ -1,0 +1,44 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: mysql-user
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: yes
+      MYSQL_DATABASE: eai_user_service
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./eai_user_service.sql:/docker-entrypoint-initdb.d/eai_user_service.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eai-network
+
+  user-service:
+    build: .
+    container_name: user-service
+    ports:
+      - "3001:3001"
+      - "4001:4001"
+    env_file:
+      - .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: npm run dev:both
+    networks:
+      - eai-network
+
+volumes:
+  mysql-data:
+
+networks:
+  eai-network:
+    driver: bridge
