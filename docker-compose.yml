@@ -1,0 +1,169 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: eai_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: eai_user_service
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql-init:/docker-entrypoint-initdb.d
+    networks:
+      - eai_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # User Service
+  user-service:
+    build: 
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: eai_user_service
+    ports:
+      - "3001:3001"
+      - "4001:4001"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=eai_user_service
+      - JWT_SECRET=your_very_secure_jwt_secret_key_here
+      - GRAPHQL_PORT=4001
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - eai_network
+
+  # Menu Service  
+  menu-service:
+    build:
+      context: ./menu-service
+      dockerfile: Dockerfile
+    container_name: eai_menu_service
+    ports:
+      - "3002:3002"
+      - "4002:4002"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=eai_menu_service
+      - JWT_SECRET=your_very_secure_jwt_secret_key_here
+      - GRAPHQL_PORT=4002
+      - USER_SERVICE_GRAPHQL_URL=http://user-service:4001/graphql
+    depends_on:
+      - mysql
+      - user-service
+    networks:
+      - eai_network
+
+  # Order Service
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: eai_order_service
+    ports:
+      - "3003:3003"
+      - "4003:4003"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=eai_order_service
+      - JWT_SECRET=your_very_secure_jwt_secret_key_here
+      - GRAPHQL_PORT=4003
+      - USER_SERVICE_GRAPHQL_URL=http://user-service:4001/graphql
+      - MENU_SERVICE_GRAPHQL_URL=http://menu-service:4002/graphql
+    depends_on:
+      - mysql
+      - user-service
+      - menu-service
+    networks:
+      - eai_network
+
+  # Review Service
+  review-service:
+    build:
+      context: ./review-service
+      dockerfile: Dockerfile
+    container_name: eai_review_service
+    ports:
+      - "3004:3004"
+      - "4004:4004"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=eai_review_service
+      - JWT_SECRET=your_very_secure_jwt_secret_key_here
+      - GRAPHQL_PORT=4004
+      - USER_SERVICE_GRAPHQL_URL=http://user-service:4001/graphql
+      - MENU_SERVICE_GRAPHQL_URL=http://menu-service:4002/graphql
+      - ORDER_SERVICE_GRAPHQL_URL=http://order-service:4003/graphql
+    depends_on:
+      - mysql
+      - user-service
+      - menu-service
+      - order-service
+    networks:
+      - eai_network
+
+  # Payment Service
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    container_name: eai_payment_service
+    ports:
+      - "3005:3005"
+      - "4005:4005"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=eai_payment_service
+      - JWT_SECRET=your_very_secure_jwt_secret_key_here
+      - GRAPHQL_PORT=4005
+      - USER_SERVICE_GRAPHQL_URL=http://user-service:4001/graphql
+      - ORDER_SERVICE_GRAPHQL_URL=http://order-service:4003/graphql
+      - MIDTRANS_SERVER_KEY=SB-Mid-server-shvTgYmhMAh714s-7RusJRw6
+      - MIDTRANS_CLIENT_KEY=SB-Mid-client-FwpyUrEkhEM5HaF2
+      - MIDTRANS_IS_PRODUCTION=false
+    depends_on:
+      - mysql
+      - user-service
+      - order-service
+    networks:
+      - eai_network
+
+  # Frontend Nginx
+  frontend:
+    image: nginx:alpine
+    container_name: eai_frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./views:/usr/share/nginx/html
+    networks:
+      - eai_network
+
+volumes:
+  mysql_data:
+
+networks:
+  eai_network:
+    driver: bridge
