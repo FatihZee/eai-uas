@@ -3,25 +3,26 @@ const { gql } = require('apollo-server-express');
 const typeDefs = gql`
   scalar Date
 
-  type User {
-    id: ID!
-    name: String!
-    email: String!
-    created_at: Date
-  }
-
   type Menu {
     id: ID!
     name: String!
     description: String
     price: Float!
+    user_id: Int!
+    created_at: Date  # Menggunakan Date scalar
+    updated_at: Date  # Menggunakan Date scalar
     orderCount: Int
     createdBy: User
-    created_at: Date
-    updated_at: Date
   }
 
-  # NEW: Movie type untuk data dari gateway eksternal
+  type User {
+    id: ID!
+    name: String!
+    email: String!
+    phone: String
+    created_at: Date  # Menggunakan Date scalar
+  }
+
   type Movie {
     id: ID!
     title: String!
@@ -31,15 +32,26 @@ const typeDefs = gql`
     releaseDate: String
   }
 
-  input MenuInput {
+  type MenuActionResponse {
+    message: String!
+    menu: Menu
+  }
+
+  type DeleteMenuResponse {
+    message: String!
+    id: ID
+  }
+
+  input CreateMenuInput {
     name: String!
     description: String
     price: Float!
   }
 
-  type MenuResponse {
-    message: String!
-    menu: Menu
+  input UpdateMenuInput {
+    name: String
+    description: String
+    price: Float
   }
 
   type Query {
@@ -49,9 +61,9 @@ const typeDefs = gql`
   }
 
   type Mutation {
-    createMenu(input: MenuInput!): MenuResponse!
-    updateMenu(id: ID!, input: MenuInput!): MenuResponse!
-    deleteMenu(id: ID!): MenuResponse!
+    createMenu(input: CreateMenuInput!): MenuActionResponse!
+    updateMenu(id: ID!, input: UpdateMenuInput!): MenuActionResponse!
+    deleteMenu(id: ID!): DeleteMenuResponse!
   }
 `;
 
