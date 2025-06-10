@@ -76,6 +76,56 @@ module.exports = {
         
         return [];
       }
+    },
+    books: async (_, __, context) => {
+      try {
+        console.log('📚 Fetching books from book service: book_service:5000');
+        
+        const response = await axios.post('http://book_service:5000/graphql', {
+          query: `
+            query {
+              books {
+                id
+                title
+                author
+                isbn
+                totalCopies
+                availableCopies
+                coverUrl
+              }
+            }
+          `
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(context.token && { 'Authorization': context.token })
+          },
+          timeout: 10000 // 10 second timeout
+        });
+
+        console.log('Book service response status:', response.status);
+
+        if (response.data.errors) {
+          console.error('🚨 Book service GraphQL errors:', response.data.errors);
+          return [];
+        }
+
+        const books = response.data.data?.books || [];
+        console.log(`✅ Successfully fetched ${books.length} books from book service`);
+        
+        return books;
+
+      } catch (error) {
+        console.error('❌ Error fetching books from book service:', {
+          message: error.message,
+          code: error.code,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+        
+        // Return empty array instead of throwing error untuk graceful fallback
+        return [];
+      }
     }
   },
   Mutation: {
