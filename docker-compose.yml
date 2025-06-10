@@ -58,11 +58,13 @@ services:
       - GRAPHQL_PORT=4002
       - USER_SERVICE_GRAPHQL_URL=http://user-service:4001/graphql
       - ORDER_SERVICE_GRAPHQL_URL=http://order-service:4003/graphql
+      - MOVIE_SERVICE_URL=http://tubes_eai_gateway:5000/graphql
     depends_on:
       - database
       - user-service
     networks:
       - eai_network
+      - shared-network
 
   # Order Service
   order-service:
@@ -160,3 +162,5 @@ volumes:
 networks:
   eai_network:
     driver: bridge
+  shared-network: # ← TAMBAHKAN: Deklarasi jaringan eksternal
+    external: true
