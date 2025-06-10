@@ -1,6 +1,7 @@
 const { GraphQLError } = require('graphql');
 const MenuService = require('../services/menuService');
 const DateScalar = require('./dateScalar');
+const axios = require('axios');
 
 module.exports = {
   // Add Date scalar resolver
@@ -26,6 +27,104 @@ module.exports = {
         console.error(`GraphQL Error fetching menu ${id}:`, error);
         if (error instanceof GraphQLError) throw error;
         throw new GraphQLError(error.message, { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
+      }
+    },
+    movies: async (_, __, context) => {
+      try {
+        console.log('🎬 Fetching movies from external gateway: tubes_eai_gateway:5000');
+        
+        const response = await axios.post('http://tubes_eai_gateway:5000/graphql', {
+          query: `
+            query {
+              movies {
+                id
+                title
+                genre
+                duration
+                description
+                releaseDate
+              }
+            }
+          `
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(context.token && { 'Authorization': context.token })
+          },
+          timeout: 10000 // 10 second timeout
+        });
+
+        console.log('Gateway response status:', response.status);
+
+        if (response.data.errors) {
+          console.error('🚨 Gateway GraphQL errors:', response.data.errors);
+          return [];
+        }
+
+        const movies = response.data.data?.movies || [];
+        console.log(`✅ Successfully fetched ${movies.length} movies from external gateway`);
+        
+        return movies;
+
+      } catch (error) {
+        console.error('❌ Error fetching movies from external gateway:', {
+          message: error.message,
+          code: error.code,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+        
+        return [];
+      }
+    },
+    books: async (_, __, context) => {
+      try {
+        console.log('📚 Fetching books from book service: book_service:5000');
+        
+        const response = await axios.post('http://book_service:5000/graphql', {
+          query: `
+            query {
+              books {
+                id
+                title
+                author
+                isbn
+                totalCopies
+                availableCopies
+                coverUrl
+              }
+            }
+          `
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(context.token && { 'Authorization': context.token })
+          },
+          timeout: 10000 // 10 second timeout
+        });
+
+        console.log('Book service response status:', response.status);
+
+        if (response.data.errors) {
+          console.error('🚨 Book service GraphQL errors:', response.data.errors);
+          return [];
+        }
+
+        const books = response.data.data?.books || [];
+        console.log(`✅ Successfully fetched ${books.length} books from book service`);
+        
+        return books;
+
+      } catch (error) {
+        console.error('❌ Error fetching books from book service:', {
+          message: error.message,
+          code: error.code,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+        
+        // Return empty array instead of throwing error untuk graceful fallback
+        return [];
       }
     }
   },

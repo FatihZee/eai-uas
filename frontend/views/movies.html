@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Movies | EAI Microservices</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      font-family: "Poppins", sans-serif;
+    }
+
+    .movie-card {
+      background: white;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      margin-bottom: 25px;
+      height: 100%;
+    }
+
+    .movie-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .movie-poster {
+      height: 200px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 3rem;
+    }
+
+    .movie-content {
+      padding: 20px;
+    }
+
+    .movie-title {
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+
+    .movie-genre {
+      background: #e3f2fd;
+      color: #1565c0;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      display: inline-block;
+      margin-right: 5px;
+    }
+
+    .movie-duration {
+      color: #666;
+      font-size: 0.9rem;
+      margin: 10px 0;
+    }
+
+    .movie-description {
+      color: #666;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 15px;
+    }
+
+    .release-date {
+      color: #888;
+      font-size: 0.85rem;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+    }
+
+    .loading-spinner {
+      text-align: center;
+      padding: 50px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 50px;
+      color: #666;
+    }
+
+    .page-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px 0;
+      margin-bottom: 30px;
+      border-radius: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div id="navbarContainer"></div>
+
+  <div class="container my-5">
+    <div class="page-header text-center">
+      <h1><i class="fas fa-film me-3"></i>Film Sedang Tayang</h1>
+      <p class="mb-0">Temukan film-film terbaru yang sedang tayang di bioskop</p>
+    </div>
+
+    <div id="loadingSpinner" class="loading-spinner">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading movies...</span>
+      </div>
+      <p class="mt-3">Memuat daftar film...</p>
+    </div>
+
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <i class="fas fa-film fa-4x text-muted mb-3"></i>
+      <h4>Tidak ada film tersedia</h4>
+      <p>Belum ada film yang sedang tayang saat ini.</p>
+    </div>
+
+    <div id="movieGrid" class="row" style="display: none;">
+      <!-- Movies akan dimuat di sini -->
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      fetch('navbar.html')
+        .then(response => response.text())
+        .then(data => {
+          document.getElementById('navbarContainer').innerHTML = data;
+          const scripts = document.getElementById('navbarContainer').querySelectorAll('script');
+          scripts.forEach(script => {
+            const newScript = document.createElement('script');
+            newScript.textContent = script.textContent;
+            document.body.appendChild(newScript);
+          });
+          if (typeof initNavbar === 'function') {
+            initNavbar();
+          }
+        })
+        .catch(error => console.error('Error loading navbar:', error));
+
+      // Load movies
+      loadMovies();
+    });
+
+    async function loadMovies() {
+      const loadingSpinner = document.getElementById("loadingSpinner");
+      const emptyState = document.getElementById("emptyState");
+      const movieGrid = document.getElementById("movieGrid");
+
+      try {
+        console.log("🎬 Fetching movies via menu service...");
+        
+        const response = await fetch("http://localhost:4002/graphql", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          },
+          body: JSON.stringify({
+            query: `
+              query {
+                movies {
+                  id
+                  title
+                  genre
+                  duration
+                  description
+                  releaseDate
+                }
+              }
+            `
+          })
+        });
+
+        console.log("Response status:", response.status);
+        console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+
+        const result = await response.json();
+        console.log("Response body:", result);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText} - ${JSON.stringify(result)}`);
+        }
+        
+        if (result.errors) {
+          throw new Error(result.errors.map(e => e.message).join(", "));
+        }
+
+        const movies = result.data?.movies;
+        console.log("✅ Movies loaded via menu service:", movies);
+
+        loadingSpinner.style.display = "none";
+
+        if (!movies || movies.length === 0) {
+          emptyState.style.display = "block";
+          emptyState.innerHTML = `
+            <i class="fas fa-film fa-4x text-muted mb-3"></i>
+            <h4>Tidak ada film tersedia</h4>
+            <p>Belum ada film yang sedang tayang saat ini atau gateway tidak tersedia.</p>
+          `;
+          return;
+        }
+
+        // Render movies
+        movieGrid.innerHTML = movies.map(movie => `
+          <div class="col-lg-4 col-md-6 mb-4">
+            <div class="movie-card">
+              <div class="movie-poster">
+                <i class="fas fa-film"></i>
+              </div>
+              <div class="movie-content">
+                <h5 class="movie-title">${movie.title || 'Untitled'}</h5>
+                <div class="mb-2">
+                  ${movie.genre ? movie.genre.split(',').map(g => 
+                    `<span class="movie-genre">${g.trim()}</span>`
+                  ).join('') : '<span class="movie-genre">Unknown</span>'}
+                </div>
+                <div class="movie-duration">
+                  <i class="fas fa-clock me-1"></i>
+                  ${movie.duration || 'Duration not specified'}
+                </div>
+                <div class="movie-description">
+                  ${movie.description || 'No description available.'}
+                </div>
+                <div class="release-date">
+                  <i class="fas fa-calendar me-1"></i>
+                  Release Date: ${movie.releaseDate ? 
+                    new Date(movie.releaseDate).toLocaleDateString('id-ID') : 
+                    'TBA'
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join("");
+
+        movieGrid.style.display = "flex";
+
+      } catch (error) {
+        console.error("❌ Error loading movies:", error);
+        loadingSpinner.style.display = "none";
+        emptyState.style.display = "block";
+        
+        document.getElementById("emptyState").innerHTML = `
+          <i class="fas fa-exclamation-triangle fa-4x text-danger mb-3"></i>
+          <h4>Error Loading Movies</h4>
+          <p>${error.message}</p>
+          <button class="btn btn-primary" onclick="loadMovies()">
+            <i class="fas fa-refresh me-1"></i>Try Again
+          </button>
+        `;
+      }
+    }
+  </script>
+</body>
+</html>
