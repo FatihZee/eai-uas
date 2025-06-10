@@ -641,15 +641,6 @@
                       <p class="text-muted mb-0">
                         <small><i class="fas fa-calendar me-1"></i>${new Date(order.created_at).toLocaleDateString()}</small>
                       </p>
-                      ${order.latestPayment ? `
-                        <p class="text-muted mb-0">
-                          <small>
-                            <i class="fas fa-credit-card me-1"></i>
-                            Payment: ${order.latestPayment.status.toUpperCase()}
-                            ${order.latestPayment.transaction_time ? ` - ${new Date(order.latestPayment.transaction_time).toLocaleDateString()}` : ''}
-                          </small>
-                        </p>
-                      ` : ''}
                     </div>
                     
                     <div class="d-flex gap-2">

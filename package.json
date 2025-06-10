@@ -2,7 +2,12 @@
   "name": "eai-uas",
   "version": "1.0.0",
   "scripts": {
-    "dev": "concurrently \"cd user-service && npm run dev:both\" \"cd menu-service && npm run dev:both\" \"cd order-service && npm run dev:both\" \"cd review-service && npm run dev:both\" \"cd payment-service && npm run dev:both\""
+    "dev": "concurrently \"cd user-service && npm run dev:both\" \"cd menu-service && npm run dev:both\" \"cd order-service && npm run dev:both\" \"cd review-service && npm run dev:both\" \"cd payment-service && npm run dev:both\"",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up",
+    "docker:up:build": "docker-compose up --build",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
