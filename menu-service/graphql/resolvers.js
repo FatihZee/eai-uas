@@ -1,29 +1,34 @@
 const { GraphQLError } = require('graphql');
 const MenuService = require('../services/menuService');
+const DateScalar = require('./dateScalar');
 const axios = require('axios');
 
 module.exports = {
+  // Add Date scalar resolver
+  Date: DateScalar,
+
   Query: {
     menus: async (_, __, context) => {
       try {
         return await MenuService.getAllMenus(context.token);
       } catch (error) {
-        throw new GraphQLError(`Failed to fetch menus: ${error.message}`, {
-          extensions: { code: 'FETCH_ERROR' }
-        });
+        console.error('GraphQL Error fetching all menus:', error);
+        throw new GraphQLError(error.message, { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
       }
     },
-
     menu: async (_, { id }, context) => {
       try {
-        return await MenuService.getMenuById(id, context.token);
+        const menu = await MenuService.getMenuById(id, context.token);
+        if (!menu) {
+          throw new GraphQLError('Menu not found', { extensions: { code: 'NOT_FOUND' } });
+        }
+        return menu;
       } catch (error) {
-        throw new GraphQLError(`Failed to fetch menu: ${error.message}`, {
-          extensions: { code: 'FETCH_ERROR' }
-        });
+        console.error(`GraphQL Error fetching menu ${id}:`, error);
+        if (error instanceof GraphQLError) throw error;
+        throw new GraphQLError(error.message, { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
       }
     },
-
     movies: async (_, __, context) => {
       try {
         console.log('🎬 Fetching movies from external gateway: tubes_eai_gateway:5000');
@@ -73,36 +78,61 @@ module.exports = {
       }
     }
   },
-
   Mutation: {
     createMenu: async (_, { input }, context) => {
+      if (!context.user || !context.user.id) {
+        throw new GraphQLError('Authentication required.', { extensions: { code: 'UNAUTHENTICATED' } });
+      }
+
       try {
-        return await MenuService.createMenu(input, context.userId);
+        const menu = await MenuService.createMenu(input, context.user.id, context.token);
+        return {
+          message: 'Menu created successfully',
+          menu
+        };
       } catch (error) {
-        throw new GraphQLError(`Failed to create menu: ${error.message}`, {
-          extensions: { code: 'CREATE_ERROR' }
-        });
+        console.error('GraphQL Error creating menu:', error);
+        let code = 'INTERNAL_SERVER_ERROR';
+        if (error.message.includes('required')) code = 'BAD_USER_INPUT';
+        throw new GraphQLError(error.message, { extensions: { code } });
       }
     },
-
     updateMenu: async (_, { id, input }, context) => {
+      if (!context.user || !context.user.id) {
+        throw new GraphQLError('Authentication required.', { extensions: { code: 'UNAUTHENTICATED' } });
+      }
+
       try {
-        return await MenuService.updateMenu(id, input, context.userId);
+        const menu = await MenuService.updateMenu(id, input, context.user.id, context.token);
+        return {
+          message: 'Menu updated successfully',
+          menu
+        };
       } catch (error) {
-        throw new GraphQLError(`Failed to update menu: ${error.message}`, {
-          extensions: { code: 'UPDATE_ERROR' }
-        });
+        console.error(`GraphQL Error updating menu ${id}:`, error);
+        let code = 'INTERNAL_SERVER_ERROR';
+        if (error.message.includes('not found')) code = 'NOT_FOUND';
+        if (error.message.includes('authorized')) code = 'FORBIDDEN';
+        throw new GraphQLError(error.message, { extensions: { code } });
       }
     },
-
     deleteMenu: async (_, { id }, context) => {
+      if (!context.user || !context.user.id) {
+        throw new GraphQLError('Authentication required.', { extensions: { code: 'UNAUTHENTICATED' } });
+      }
+
       try {
-        return await MenuService.deleteMenu(id, context.userId);
+        const result = await MenuService.deleteMenu(id, context.user.id, context.token);
+        return result;
       } catch (error) {
-        throw new GraphQLError(`Failed to delete menu: ${error.message}`, {
-          extensions: { code: 'DELETE_ERROR' }
-        });
+        console.error(`GraphQL Error deleting menu ${id}:`, error);
+        let code = 'INTERNAL_SERVER_ERROR';
+        if (error.message.includes('not found')) code = 'NOT_FOUND';
+        if (error.message.includes('authorized')) code = 'FORBIDDEN';
+        throw new GraphQLError(error.message, { extensions: { code } });
       }
     }
-  }
+  },
+  // Field resolvers sudah tidak diperlukan karena Date scalar menangani formatting
+  // Date scalar akan otomatis handle semua field dengan type Date
 };
