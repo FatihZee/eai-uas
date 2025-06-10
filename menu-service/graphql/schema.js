@@ -32,6 +32,17 @@ const typeDefs = gql`
     releaseDate: String
   }
 
+  type Book {
+    id: ID!
+    title: String!
+    author: String!
+    isbn: String!
+    totalCopies: Int!
+    availableCopies: Int!
+    coverUrl: String
+  }
+
+
   type MenuActionResponse {
     message: String!
     menu: Menu
@@ -58,6 +69,7 @@ const typeDefs = gql`
     menus: [Menu!]!
     menu(id: ID!): Menu
     movies: [Movie!]!  # NEW: Query untuk movies
+    books: [Book!]!
   }
 
   type Mutation {
