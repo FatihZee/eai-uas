@@ -59,6 +59,7 @@ services:
       - USER_SERVICE_GRAPHQL_URL=http://user-service:4001/graphql
       - ORDER_SERVICE_GRAPHQL_URL=http://order-service:4003/graphql
       - MOVIE_SERVICE_URL=http://tubes_eai_gateway:5000/graphql
+      - BOOK_SERVICE_URL=http://book_service:5004/graphql  # NEW: Book service URL
     depends_on:
       - database
       - user-service
