@@ -92,6 +92,29 @@
       margin-bottom: 30px;
       border-radius: 15px;
     }
+
+    .floating-button {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
+
+    .floating-button a {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-family: sans-serif;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: background-color 0.2s;
+    }
+
+    .floating-button a:hover {
+      background-color: #0056b3;
+    }
   </style>
 </head>
 <body>
@@ -118,6 +141,10 @@
 
     <div id="bookGrid" class="row" style="display: none;">
       <!-- Books akan dimuat di sini -->
+    </div>
+
+    <div class="floating-button">
+      <a href="http://localhost:3000" target="_blank">Ke Website BuKuKu</a>
     </div>
   </div>
 
